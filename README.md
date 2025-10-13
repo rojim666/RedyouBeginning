@@ -2,7 +2,7 @@
 
 一个简洁、美观、功能丰富的浏览器起始页，让你的每次打开浏览器都是一次愉悦的体验。
 <a href="https://ibb.co/zWP6NPwH"><img src="https://i.ibb.co/Ps1Dt18z/1.png" alt="1" border="0"></a>
-
+<a href="https://ibb.co/TB8BP93P"><img src="https://i.ibb.co/7JWJrsmr/2.png" alt="2" border="0"></a>
 ##  特色功能
 
 ###  昼夜模式切换
