@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>红柚起始页</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Add favicon link -->
+  <link rel="icon" type="image/svg+xml" href="_logo.svg">
+</head>
+<body>
+  <main class="container">
+    <header class="topbar">
+      <div class="left">
+        <!-- night/day toggle inspired by jh3y CodePen (original implementation) -->
+        <button id="themeToggle" class="toggle" aria-pressed="false" title="切换昼夜">
+          <!-- Original, permissive SVG animation: sun, moon, stars, clouds, and a simple bear-like shape (generic) -->
+          <svg class="toggle-svg" viewBox="0 0 120 60" aria-hidden="true" focusable="false">
+            <!-- sky backdrop circle for sun/moon -->
+            <rect class="sky" x="0" y="0" width="120" height="60" rx="12" />
+
+            <!-- sun -->
+            <g class="sun-group">
+              <circle class="sun" cx="32" cy="30" r="8" />
+              <g class="sun-rays">
+                <!-- 主要四个方向的光线 -->
+                <line x1="32" y1="12" x2="32" y2="6" />
+                <line x1="32" y1="48" x2="32" y2="54" />
+                <line x1="16" y1="30" x2="10" y2="30" />
+                <line x1="48" y1="30" x2="54" y2="30" />
+                <!-- 对角线方向的光线 -->
+                <line x1="21" y1="19" x2="16" y2="14" />
+                <line x1="43" y1="19" x2="48" y2="14" />
+                <line x1="21" y1="41" x2="16" y2="46" />
+                <line x1="43" y1="41" x2="48" y2="46" />
+              </g>
+            </g>
+
+            <!-- moon (simple crescent) -->
+            <g class="moon-group" transform="translate(0,0)">
+              <path class="moon" d="M84 24a8 8 0 1 1-7.3 11.1 6 6 0 1 0 7.3-11.1z"/>
+            </g>
+
+            <!-- stars -->
+            <g class="stars">
+              <circle class="star s1" cx="74" cy="10" r="1.6" />
+              <circle class="star s2" cx="92" cy="14" r="1.2" />
+              <circle class="star s3" cx="102" cy="22" r="1.4" />
+            </g>
+
+            <!-- clouds (simple shapes) -->
+            <g class="clouds">
+              <ellipse class="cloud c1" cx="56" cy="38" rx="18" ry="6" />
+              <ellipse class="cloud c2" cx="88" cy="36" rx="12" ry="5" />
+            </g>
+
+            <!-- simple bear-ish silhouette (generic circles) -->
+            <g class="bear" transform="translate(14,34)">
+              <circle cx="6" cy="0" r="4" class="bear-head" />
+              <circle cx="0" cy="12" r="6" class="bear-body" />
+            </g>
+          </svg>
+        </button>
+        <button id="bgBtn" class="icon-btn" title="背景设置" aria-label="背景设置" onclick="openBackgroundDialog()">
+          <!-- simple image icon -->
+          <svg width="18" height="14" viewBox="0 0 18 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="0.5" y="0.5" width="17" height="13" rx="2" stroke="currentColor" fill="none"/>
+            <circle cx="5" cy="5" r="2" fill="currentColor" />
+            <path d="M2 11l4-4 6 6H2z" fill="currentColor" />
+          </svg>
+        </button>
+        <button id="bookmarksBtn" class="icon-btn" title="收藏夹" aria-label="收藏夹">
+          <!-- bookmark icon -->
+          <svg width="16" height="18" viewBox="0 0 16 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M2 2C2 1.44772 2.44772 1 3 1H13C13.5523 1 14 1.44772 14 2V16.5858C14 16.851 13.7893 17.0618 13.5241 17.0618C13.3927 17.0618 13.2676 17.0097 13.1757 16.9178L8 11.7421L2.82426 16.9178C2.63679 17.1053 2.33421 17.1053 2.14674 16.9178C2.05482 16.826 2.00275 16.7009 2.00275 16.5695L2 2Z" stroke="currentColor" fill="none" stroke-width="1.5"/>
+          </svg>
+        </button>
+      </div>
+      <div class="right">
+        <button id="editLinksBtn" class="btn">书签</button>
+      </div>
+    </header>
+
+    <section class="center">
+      <div class="clock" id="clock">00:00</div>
+      <div class="greeting" id="greeting">你好</div>
+
+      <div class="search-container">
+        <form id="searchForm" class="search" autocomplete="off">
+          <select id="engineSelect" aria-label="搜索引擎">
+            <option value="https://www.google.com/search?q=">Google</option>
+            <option value="https://www.bing.com/search?q=">Bing</option>
+            <option value="https://www.baidu.com/s?wd=">百度</option>
+            <option value="https://duckduckgo.com/?q=">DuckDuckGo</option>
+          </select>
+          <div class="search-input-wrapper">
+            <input id="searchInput" type="search" placeholder="搜索或输入网址" aria-label="搜索框">
+            <div id="searchSuggestions" class="search-suggestions hidden"></div>
+          </div>
+          <button type="submit" class="btn">搜索</button>
+        </form>
+      </div>
+
+      <section class="links" id="linksGrid" aria-label="快速链接">
+        <!-- links populated by JS -->
+      </section>
+    </section>
+
+    <footer class="footer">
+      <small>红柚起始页</small>
+    </footer>
+  </main>
+
+  <dialog id="editDialog">
+    <form method="dialog" class="edit-form">
+      <div class="dialog-header">
+        <h3>编辑书签</h3>
+        <button type="button" class="close-btn" aria-label="关闭" onclick="document.getElementById('editDialog').close()">×</button>
+      </div>
+      <div class="dialog-content">
+        <div id="linksEditor"></div>
+      </div>
+      <div class="dialog-actions">
+        <button id="addLinkBtn" type="button" class="btn secondary">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 6px;">
+            <path d="M7 1V13M1 7H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          添加书签
+        </button>
+        <div class="dialog-actions-right">
+          <button id="cancelEditBtn" type="button" class="btn secondary">取消</button>
+          <button id="saveLinksBtn" type="submit" class="btn primary">保存</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="bgDialog" class="bg-dialog">
+    <form method="dialog" class="bg-form">
+      <header class="bg-header">
+        <h3>选择背景</h3>
+        <button id="cancelBgBtn" type="button" class="close-btn" aria-label="关闭">×</button>
+      </header>
+
+      <div class="bg-tabs">
+        <button type="button" class="tab-btn active" data-tab="presets">预设背景</button>
+        <button type="button" class="tab-btn" data-tab="custom">自定义</button>
+      </div>
+
+      <div class="bg-content">
+        <!-- 预设背景选项卡 -->
+        <div class="tab-panel active" data-panel="presets">
+          <div class="presets-grid" id="presetsGrid">
+            <!-- populated by JS -->
+          </div>
+        </div>
+
+        <!-- 自定义背景选项卡 -->
+        <div class="tab-panel" data-panel="custom">
+          <div class="custom-upload">
+            <div class="upload-area" id="uploadArea">
+              <div class="upload-icon">📁</div>
+              <p>拖拽图片到这里或点击上传</p>
+              <small>支持 JPG、PNG、GIF 格式，大图片会自动压缩</small>
+              <input id="bgFileInput" type="file" accept="image/*" hidden>
+            </div>
+            <div class="url-input">
+              <label>或输入图片URL</label>
+              <input id="bgUrlInput" placeholder="https://..." type="url">
+              <button id="applyUrlBtn" type="button" class="btn">应用URL背景</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 实时预览 -->
+      <div class="bg-preview-section">
+        <div class="preview-controls">
+          <select id="bgSizeSelect">
+            <option value="cover">填充</option>
+            <option value="contain">适应</option>
+            <option value="auto">原始</option>
+          </select>
+          <select id="bgPosSelect">
+            <option value="center center">居中</option>
+            <option value="top center">顶部</option>
+            <option value="bottom center">底部</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="bg-actions">
+        <button id="resetBgBtn" type="button" class="btn secondary">重置</button>
+        <button id="saveBgBtn" type="button" class="btn primary">应用背景</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 收藏夹侧边栏 -->
+  <div id="bookmarksPanel" class="bookmarks-panel hidden">
+    <div class="bookmarks-header">
+      <h3>收藏夹</h3>
+      <div class="bookmarks-actions">
+        <button id="importBookmarksBtn" class="icon-btn" title="导入书签">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M8 1V11M4 7L8 11L12 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M1 13H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button id="addBookmarkBtn" class="icon-btn" title="添加书签">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M8 1V15M1 8H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button id="closeBookmarksBtn" class="icon-btn" title="关闭">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    
+    <div class="bookmarks-search">
+      <input type="text" id="bookmarksSearch" placeholder="搜索书签..." autocomplete="off">
+    </div>
+    
+    <div id="bookmarksList" class="bookmarks-list">
+      <!-- 书签内容将通过JS填充 -->
+    </div>
+    
+    <div class="bookmarks-footer">
+      <small>提示：可以导入Edge书签文件</small>
+      <button id="exportBookmarksBtn" class="btn secondary small">导出</button>
+    </div>
+  </div>
+
+  <!-- 收藏夹遮罩层 -->
+  <div id="bookmarksOverlay" class="bookmarks-overlay hidden"></div>
+
+  <script src="script.js"></script>
+  <div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>
