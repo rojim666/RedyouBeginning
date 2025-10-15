@@ -44,6 +44,275 @@ function updateClock(){
   $('#greeting').textContent = g;
 }
 
+// 每日一言功能
+async function loadQuote() {
+  const quoteText = $('#quoteText');
+  const quoteAuthor = $('#quoteAuthor');
+  
+  // 本地备用语录库
+  const localQuotes = [
+    { text: '生活不是等待风暴过去，而是学会在雨中翩翩起舞。', author: '佚名' },
+    { text: '你的时间有限，不要浪费时间活在别人的生活里。', author: 'Steve Jobs' },
+    { text: '成功不是终点，失败也不是致命的，重要的是继续前进的勇气。', author: 'Winston Churchill' },
+    { text: '唯一限制我们明天的，是我们对今天的怀疑。', author: 'Franklin D. Roosevelt' },
+    { text: '不要问国家能为你做什么，而要问你能为国家做什么。', author: 'John F. Kennedy' },
+    { text: '黑暗不能驱走黑暗，只有光明能做到；仇恨不能驱走仇恨，只有爱能做到。', author: 'Martin Luther King Jr.' },
+    { text: '保持饥饿，保持愚蠢。', author: 'Steve Jobs' },
+    { text: '人生苦短，我用Python。', author: '程序员' },
+    { text: '设计不只是看起来怎么样，感觉怎么样，设计是如何运作。', author: 'Steve Jobs' },
+    { text: '简单是复杂的终极形式。', author: 'Leonardo da Vinci' }
+  ];
+  
+  try {
+    // 使用 tenapi 一言API
+    const formData = new FormData();
+    formData.append('format', 'json');
+    
+    const response = await fetch('https://tenapi.cn/v2/yiyan', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      if (result.code === 200 && result.data) {
+        const data = result.data;
+        quoteText.textContent = `"${data.hitokoto}"`;
+        // 优先显示来源，其次是作者
+        const authorText = data.source || data.author || '佚名';
+        quoteAuthor.textContent = authorText;
+      } else {
+        throw new Error('API返回数据异常');
+      }
+    } else {
+      throw new Error('API请求失败');
+    }
+  } catch (error) {
+    console.warn('一言API加载失败，使用本地语录:', error);
+    // API失败时使用本地语录
+    const randomQuote = localQuotes[Math.floor(Math.random() * localQuotes.length)];
+    quoteText.textContent = `"${randomQuote.text}"`;
+    quoteAuthor.textContent = randomQuote.author;
+  }
+}
+
+// 天气功能
+let weatherData = null; // 存储完整天气数据
+
+// 获取地理位置名称
+async function getLocationName(latitude, longitude) {
+  try {
+    // 使用免费的Nominatim逆地理编码API
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=zh-CN`,
+      {
+        headers: {
+          'User-Agent': 'StartPage/1.0'
+        }
+      }
+    );
+    
+    if (response.ok) {
+      const data = await response.json();
+      const address = data.address;
+      
+      // 优先返回：城市 > 县 > 州 > 省
+      const location = address.city || 
+                      address.county || 
+                      address.state || 
+                      address.province || 
+                      address.country || 
+                      '未知位置';
+      
+      return location;
+    }
+  } catch (error) {
+    console.warn('获取位置名称失败:', error);
+  }
+  
+  return '当前位置';
+}
+
+async function loadWeather() {
+  const weatherIcon = $('#weatherIcon');
+  const weatherTemp = $('#weatherTemp');
+  
+  try {
+    // 获取用户位置
+    const position = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        timeout: 10000,
+        maximumAge: 600000 // 10分钟缓存
+      });
+    });
+    
+    const { latitude, longitude } = position.coords;
+    
+    // 获取地点名称
+    const locationName = await getLocationName(latitude, longitude);
+    
+    // 使用免费的Open-Meteo API（无需密钥）获取完整天气数据
+    const response = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m&daily=uv_index_max,sunrise,sunset&timezone=auto`
+    );
+    
+    if (response.ok) {
+      const data = await response.json();
+      const current = data.current;
+      const daily = data.daily;
+      const temp = Math.round(current.temperature_2m);
+      const weatherCode = current.weather_code;
+      
+      // 根据天气代码设置图标
+      const weatherIcons = {
+        0: '☀️',    // 晴天
+        1: '🌤️',   // 主要晴朗
+        2: '⛅',   // 部分多云
+        3: '☁️',   // 阴天
+        45: '🌫️',  // 雾
+        48: '🌫️',  // 雾凇
+        51: '🌦️',  // 小雨
+        53: '🌧️',  // 中雨
+        55: '🌧️',  // 大雨
+        61: '🌦️',  // 小雨
+        63: '🌧️',  // 中雨
+        65: '🌧️',  // 大雨
+        71: '🌨️',  // 小雪
+        73: '🌨️',  // 中雪
+        75: '🌨️',  // 大雪
+        77: '❄️',   // 雪粒
+        80: '🌦️',  // 阵雨
+        81: '⛈️',   // 雷阵雨
+        82: '⛈️',   // 强雷阵雨
+        85: '🌨️',  // 阵雪
+        86: '🌨️',  // 大阵雪
+        95: '⛈️',   // 雷暴
+        96: '⛈️',   // 雷暴伴冰雹
+        99: '⛈️'    // 强雷暴伴冰雹
+      };
+      
+      const weatherDescriptions = {
+        0: '晴朗', 1: '晴朗', 2: '多云', 3: '阴天',
+        45: '有雾', 48: '有雾', 51: '小雨', 53: '中雨', 55: '大雨',
+        61: '小雨', 63: '中雨', 65: '大雨', 71: '小雪', 73: '中雪', 75: '大雪',
+        77: '雨夹雪', 80: '阵雨', 81: '雷阵雨', 82: '强雷阵雨',
+        85: '阵雪', 86: '大阵雪', 95: '雷暴', 96: '冰雹', 99: '强冰雹'
+      };
+      
+      // 风向转换
+      const getWindDirection = (degree) => {
+        const directions = ['北', '东北', '东', '东南', '南', '西南', '西', '西北'];
+        const index = Math.round(degree / 45) % 8;
+        return directions[index];
+      };
+      
+      // 紫外线等级
+      const getUVLevel = (uvIndex) => {
+        if (uvIndex <= 2) return '低';
+        if (uvIndex <= 5) return '中等';
+        if (uvIndex <= 7) return '高';
+        if (uvIndex <= 10) return '很高';
+        return '极高';
+      };
+      
+      // 格式化时间
+      const formatTime = (isoString) => {
+        if (!isoString) return '--:--';
+        const date = new Date(isoString);
+        return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      };
+      
+      // 存储完整天气数据
+      weatherData = {
+        location: locationName,
+        temp,
+        icon: weatherIcons[weatherCode] || '🌤️',
+        description: weatherDescriptions[weatherCode] || '未知',
+        humidity: current.relative_humidity_2m,
+        feelsLike: Math.round(current.apparent_temperature),
+        windSpeed: Math.round(current.wind_speed_10m),
+        windDirection: getWindDirection(current.wind_direction_10m),
+        uvIndex: daily.uv_index_max[0],
+        uvLevel: getUVLevel(daily.uv_index_max[0]),
+        sunrise: formatTime(daily.sunrise[0]),
+        sunset: formatTime(daily.sunset[0]),
+        visibility: 10, // Open-Meteo不提供能见度，使用默认值
+        updateTime: new Date().toLocaleString('zh-CN', { 
+          month: '2-digit', 
+          day: '2-digit', 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        })
+      };
+      
+      // 更新topbar显示
+      weatherIcon.textContent = weatherData.icon;
+      weatherTemp.textContent = `${temp}°C`;
+      
+      // 保存到localStorage供下次使用
+      localStorage.setItem('startpage.weather', JSON.stringify({
+        ...weatherData,
+        timestamp: Date.now()
+      }));
+    }
+  } catch (error) {
+    console.warn('天气数据加载失败:', error);
+    // 如果获取失败，尝试从localStorage加载缓存
+    const cached = localStorage.getItem('startpage.weather');
+    if (cached) {
+      try {
+        const data = JSON.parse(cached);
+        // 如果缓存不超过1小时，使用缓存数据
+        if (Date.now() - data.timestamp < 3600000) {
+          weatherData = data;
+          weatherIcon.textContent = data.icon;
+          weatherTemp.textContent = `${data.temp}°C`;
+          return;
+        }
+      } catch (e) {}
+    }
+    
+    // 完全失败时显示默认值
+    weatherIcon.textContent = '🌤️';
+    weatherTemp.textContent = '--°C';
+  }
+}
+
+// 显示天气详情卡片
+function showWeatherCard() {
+  if (!weatherData) {
+    showToast('天气数据加载中，请稍候...');
+    return;
+  }
+  
+  // 更新卡片内容
+  $('#weatherLocation').textContent = weatherData.location || '天气详情';
+  $('#weatherCardIcon').textContent = weatherData.icon;
+  $('#weatherCardTemp').textContent = `${weatherData.temp}°C`;
+  $('#weatherCardDesc').textContent = weatherData.description;
+  $('#weatherWindSpeed').textContent = `${weatherData.windSpeed} km/h`;
+  $('#weatherHumidity').textContent = `${weatherData.humidity}%`;
+  $('#weatherFeelsLike').textContent = `${weatherData.feelsLike}°C`;
+  $('#weatherVisibility').textContent = `${weatherData.visibility} km`;
+  $('#weatherUV').textContent = `${weatherData.uvIndex} (${weatherData.uvLevel})`;
+  $('#weatherSunrise').textContent = weatherData.sunrise;
+  $('#weatherSunset').textContent = weatherData.sunset;
+  $('#weatherWindDir').textContent = weatherData.windDirection;
+  $('#weatherUpdateTime').textContent = `更新时间：${weatherData.updateTime}`;
+  
+  // 显示卡片和遮罩
+  $('#weatherCard').classList.remove('hidden');
+  $('#weatherOverlay').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+// 关闭天气详情卡片
+function closeWeatherCard() {
+  $('#weatherCard').classList.add('hidden');
+  $('#weatherOverlay').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
 // render links
 // 获取网站favicon的函数  
 function getFaviconUrl(url) {
@@ -1555,6 +1824,12 @@ function init(){
   renderLinks();
   updateClock();
   setInterval(updateClock, 1000*30);
+  
+  // 加载每日一言和天气
+  loadQuote();
+  loadWeather();
+  // 每小时更新一次天气
+  setInterval(loadWeather, 3600000);
 
   // events
   $('#searchForm').addEventListener('submit', onSearch);
@@ -1632,6 +1907,15 @@ function init(){
   if (importBookmarksBtn) importBookmarksBtn.addEventListener('click', handleBookmarkImport);
   if (exportBookmarksBtn) exportBookmarksBtn.addEventListener('click', exportBookmarks);
 
+  // 天气卡片事件绑定
+  const weatherElement = document.getElementById('weather');
+  const closeWeatherCardBtn = document.getElementById('closeWeatherCard');
+  const weatherOverlay = document.getElementById('weatherOverlay');
+  
+  if (weatherElement) weatherElement.addEventListener('click', showWeatherCard);
+  if (closeWeatherCardBtn) closeWeatherCardBtn.addEventListener('click', closeWeatherCard);
+  if (weatherOverlay) weatherOverlay.addEventListener('click', closeWeatherCard);
+
   loadTheme();
   loadSync();
   bindSync();
@@ -1648,6 +1932,556 @@ function showToast(text, duration = 2500){
   clearTimeout(t._timeout);
   t._timeout = setTimeout(()=>{ t.classList.remove('show'); }, duration);
 }
+
+// ==================== 音效播放器功能 ====================
+const ambientSounds = [
+  { 
+    id: 'rain', 
+    name: '雨声', 
+    url: 'music/rain.mp3',
+    svg: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41M8 16l-1 2M12 14l-1 2M16 16l-1 2M8 10l-1 2M12 8l-1 2M16 10l-1 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  },
+  { 
+    id: 'ocean', 
+    name: '海浪', 
+    url: 'music/waves.mp3',
+    svg: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 12c.5-2 2-3.5 4-3.5s3.5 1.5 4 3.5c.5-2 2-3.5 4-3.5s3.5 1.5 4 3.5c.5-2 2-3.5 4-3.5M2 16c.5-2 2-3.5 4-3.5s3.5 1.5 4 3.5c.5-2 2-3.5 4-3.5s3.5 1.5 4 3.5c.5-2 2-3.5 4-3.5M2 20c.5-2 2-3.5 4-3.5s3.5 1.5 4 3.5c.5-2 2-3.5 4-3.5s3.5 1.5 4 3.5c.5-2 2-3.5 4-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  },
+  { 
+    id: 'forest', 
+    name: '森林', 
+    url: 'music/forest.mp3',
+    svg: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L8 8h8l-4-6zM12 8L8 14h8l-4-6zM12 14L6 22h12l-6-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 22v-4h4v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  },
+  { 
+    id: 'cafe', 
+    name: '咖啡厅', 
+    url: 'music/cafe.mp3',
+    svg: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 8h1a4 4 0 0 1 0 8h-1M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 1v3M10 1v3M14 1v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
+  },
+  { 
+    id: 'fireplace', 
+    name: '壁炉', 
+    url: 'music/fire.mp3',
+    svg: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  },
+  { 
+    id: 'thunder', 
+    name: '雷雨', 
+    url: 'music/rain and thunder.mp3',
+    svg: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 16l-1 2M12 14l-1 2M16 16l-1 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'
+  }
+];
+
+let currentAudio = null;
+let currentSoundId = null;
+
+// 初始化音效面板
+function initSoundPanel() {
+  const soundList = $('#soundList');
+  const soundBtn = $('#soundBtn');
+  const soundPanel = $('#soundPanel');
+  const closeSoundBtn = $('#closeSoundBtn');
+  const volumeSlider = $('#volumeSlider');
+  const volumeValue = $('#volumeValue');
+  
+  if (!soundList || !soundBtn) return;
+  
+  // 渲染音效列表
+  soundList.innerHTML = ambientSounds.map(sound => `
+    <div class="sound-item" data-sound-id="${sound.id}">
+      <div class="sound-info">
+        <span class="sound-icon">${sound.svg}</span>
+        <span class="sound-name">${sound.name}</span>
+      </div>
+      <div class="sound-status"></div>
+    </div>
+  `).join('');
+  
+  // 绑定事件
+  soundBtn.addEventListener('click', () => {
+    soundPanel.classList.toggle('hidden');
+  });
+  
+  if (closeSoundBtn) {
+    closeSoundBtn.addEventListener('click', () => {
+      soundPanel.classList.add('hidden');
+    });
+  }
+  
+  // 音效选择
+  soundList.querySelectorAll('.sound-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const soundId = item.dataset.soundId;
+      toggleSound(soundId);
+    });
+  });
+  
+  // 音量控制
+  if (volumeSlider) {
+    volumeSlider.addEventListener('input', (e) => {
+      const volume = e.target.value;
+      volumeValue.textContent = `${volume}%`;
+      if (currentAudio) {
+        currentAudio.volume = volume / 100;
+      }
+      localStorage.setItem('startpage.soundVolume', volume);
+    });
+    
+    // 加载保存的音量
+    const savedVolume = localStorage.getItem('startpage.soundVolume') || '50';
+    volumeSlider.value = savedVolume;
+    volumeValue.textContent = `${savedVolume}%`;
+  }
+  
+  // 点击外部关闭面板
+  document.addEventListener('click', (e) => {
+    if (soundPanel && !soundPanel.contains(e.target) && !soundBtn.contains(e.target)) {
+      soundPanel.classList.add('hidden');
+    }
+  });
+}
+
+// 切换音效播放
+function toggleSound(soundId) {
+  const sound = ambientSounds.find(s => s.id === soundId);
+  if (!sound) return;
+  
+  // 如果点击的是当前播放的音效，停止播放
+  if (currentSoundId === soundId && currentAudio) {
+    stopSound();
+    return;
+  }
+  
+  // 停止当前播放的音效
+  if (currentAudio) {
+    stopSound();
+  }
+  
+  // 播放新音效
+  playSound(sound);
+}
+
+// 播放音效
+function playSound(sound) {
+  try {
+    currentAudio = new Audio(sound.url);
+    currentAudio.loop = true;
+    currentAudio.volume = ($('#volumeSlider')?.value || 50) / 100;
+    
+    currentAudio.play().then(() => {
+      currentSoundId = sound.id;
+      updateSoundUI();
+      showToast(`正在播放: ${sound.name}`, 1500);
+    }).catch(error => {
+      console.error('播放失败:', error);
+      showToast('播放失败，请重试', 2000);
+      currentAudio = null;
+      currentSoundId = null;
+    });
+  } catch (error) {
+    console.error('音频加载失败:', error);
+    showToast('音频加载失败', 2000);
+  }
+}
+
+// 停止音效
+function stopSound() {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    currentAudio = null;
+  }
+  currentSoundId = null;
+  updateSoundUI();
+}
+
+// 更新UI状态
+function updateSoundUI() {
+  document.querySelectorAll('.sound-item').forEach(item => {
+    const soundId = item.dataset.soundId;
+    if (soundId === currentSoundId) {
+      item.classList.add('active');
+    } else {
+      item.classList.remove('active');
+    }
+  });
+  
+  // 更新按钮状态
+  const soundBtn = $('#soundBtn');
+  if (soundBtn) {
+    if (currentSoundId) {
+      soundBtn.style.color = 'var(--accent)';
+    } else {
+      soundBtn.style.color = '';
+    }
+  }
+}
+
+// 在init函数中添加音效面板初始化
+// 需要在DOMContentLoaded后调用
+document.addEventListener('DOMContentLoaded', () => {
+  initSoundPanel();
+});
+
+// ==================== 专注空间功能 ====================
+let focusTimer = null;
+let focusTimeRemaining = 25 * 60; // 默认25分钟，单位秒
+let focusTotalTime = 25 * 60;
+let focusIsRunning = false;
+let focusTasks = [];
+let focusStats = {
+  todayPomodoros: 0,
+  todayFocusTime: 0, // 分钟
+  lastDate: null
+};
+
+// 专注语录库
+const focusQuotes = [
+  "专注是通往卓越的唯一道路",
+  "深度工作是一种超能力",
+  "心流状态下，时间会为你驻足",
+  "专注的每一分钟，都在塑造更好的自己",
+  "世界上最宝贵的资源，是你的注意力",
+  "当你专注时，全世界都会为你让路",
+  "成功的秘诀在于对目标保持持续的专注",
+  "专注不是选择做什么，而是选择不做什么",
+  "深度思考需要不被打扰的时间",
+  "专注是对抗碎片化时代的最佳武器"
+];
+
+// 加载专注数据
+function loadFocusData() {
+  try {
+    // 加载任务
+    const tasksData = localStorage.getItem('startpage.focusTasks');
+    if (tasksData) {
+      focusTasks = JSON.parse(tasksData);
+    }
+    
+    // 加载统计数据
+    const statsData = localStorage.getItem('startpage.focusStats');
+    if (statsData) {
+      focusStats = JSON.parse(statsData);
+      
+      // 检查是否是新的一天
+      const today = new Date().toDateString();
+      if (focusStats.lastDate !== today) {
+        focusStats.todayPomodoros = 0;
+        focusStats.todayFocusTime = 0;
+        focusStats.lastDate = today;
+        saveFocusStats();
+      }
+    } else {
+      focusStats.lastDate = new Date().toDateString();
+    }
+  } catch (e) {
+    console.warn('加载专注数据失败:', e);
+  }
+}
+
+// 保存专注任务
+function saveFocusTasks() {
+  localStorage.setItem('startpage.focusTasks', JSON.stringify(focusTasks));
+}
+
+// 保存专注统计
+function saveFocusStats() {
+  localStorage.setItem('startpage.focusStats', JSON.stringify(focusStats));
+}
+
+// 打开专注模式
+// 打开专注模式
+function openFocusMode() {
+  loadFocusData();
+  const focusMode = $('#focusMode');
+  focusMode.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  
+  // 应用保存的透明度
+  const savedOpacity = localStorage.getItem('startpage.focusOpacity') || '85';
+  updateFocusOpacity(savedOpacity);
+  
+  // 显示随机语录
+  const randomQuote = focusQuotes[Math.floor(Math.random() * focusQuotes.length)];
+  $('#focusQuote').textContent = `"${randomQuote}"`;
+  
+  // 渲染任务和统计
+  renderFocusTasks();
+  updateFocusStats();
+  
+  // 重置计时器显示
+  updateTimerDisplay();
+}
+
+// 关闭专注模式
+function exitFocusMode() {
+  const focusMode = $('#focusMode');
+  focusMode.classList.add('hidden');
+  document.body.style.overflow = '';
+  
+  // 停止计时器
+  if (focusIsRunning) {
+    pauseFocusTimer();
+  }
+}
+
+// 开始专注计时
+function startFocusTimer() {
+  if (focusIsRunning) return;
+  
+  focusIsRunning = true;
+  $('#focusStartBtn').classList.add('hidden');
+  $('#focusPauseBtn').classList.remove('hidden');
+  $('#focusTimerLabel').textContent = '专注中...';
+  
+  focusTimer = setInterval(() => {
+    focusTimeRemaining--;
+    updateTimerDisplay();
+    updateProgressRing();
+    
+    if (focusTimeRemaining <= 0) {
+      completeFocusSession();
+    }
+  }, 1000);
+}
+
+// 暂停专注计时
+function pauseFocusTimer() {
+  focusIsRunning = false;
+  clearInterval(focusTimer);
+  $('#focusStartBtn').classList.remove('hidden');
+  $('#focusPauseBtn').classList.add('hidden');
+  $('#focusTimerLabel').textContent = '已暂停';
+}
+
+// 重置专注计时
+function resetFocusTimer() {
+  pauseFocusTimer();
+  focusTimeRemaining = focusTotalTime;
+  updateTimerDisplay();
+  updateProgressRing();
+  $('#focusTimerLabel').textContent = '准备开始';
+}
+
+// 完成专注会话
+function completeFocusSession() {
+  pauseFocusTimer();
+  
+  // 更新统计
+  focusStats.todayPomodoros++;
+  focusStats.todayFocusTime += Math.floor(focusTotalTime / 60);
+  saveFocusStats();
+  updateFocusStats();
+  
+  // 显示完成提示
+  $('#focusTimerLabel').textContent = '完成！';
+  showToast(' 太棒了！完成一个专注周期！');
+  
+  // 播放完成音效（如果浏览器支持）
+  try {
+    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUKfk8LNlGwU7k9nyyXkqBSl+zfDcjkILEl+1 6eylVhQKR6Dh87tjHwUrgs3z2og1CBxqvvDmnE0MD1Cn5PCzZBoFPJTZ8sl4KgUngc/w2o0/CxFftejsp1QUCUig4fO7Y yEFK4PN89qINQgcab7w5p1MDA9RqOTws2MaBT2U2fLKdykFKX/P8NqNPwoQYLfn7KhUEwhJoeHzu2cgBSyDzvPaizUIHW3A8eadTQoPU6nl8LJkGgU+ltryynYpBSqA0PDajkALEGG46eynVBMISKLh87tmIAUsgs/z2Yk1CB1twPHmnU0KD1Oo5fCzYxoFPpbZ8sp1KQUqgNDw2o4/ChBiuOjsp1QTB0mi4PO7ZyAFLIPP89qJNQgdbsHx551NCg9Sp+Xws2MaBT+W2fLKdikFKoDQ8NqOPwoQYrjp7KdUEwdJo+Dzumg');
+    audio.play();
+  } catch (e) {}
+  
+  // 3秒后重置
+  setTimeout(() => {
+    resetFocusTimer();
+  }, 3000);
+}
+
+// 更新计时器显示
+function updateTimerDisplay() {
+  const minutes = Math.floor(focusTimeRemaining / 60);
+  const seconds = focusTimeRemaining % 60;
+  const display = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  $('#focusTimeDisplay').textContent = display;
+}
+
+// 更新进度环
+function updateProgressRing() {
+  const circle = document.querySelector('.progress-ring-circle');
+  const circumference = 2 * Math.PI * 85; // 2πr
+  const progress = focusTimeRemaining / focusTotalTime;
+  const offset = circumference * (1 - progress);
+  circle.style.strokeDashoffset = offset;
+}
+
+// 设置专注时长
+function setFocusDuration(minutes) {
+  if (focusIsRunning) {
+    showToast('请先停止当前计时');
+    return;
+  }
+  
+  focusTotalTime = minutes * 60;
+  focusTimeRemaining = focusTotalTime;
+  updateTimerDisplay();
+  updateProgressRing();
+  
+  // 更新按钮状态
+  document.querySelectorAll('.duration-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+}
+
+// 渲染专注任务列表
+function renderFocusTasks() {
+  const tasksList = $('#focusTasksList');
+  if (!tasksList) return;
+  
+  if (focusTasks.length === 0) {
+    tasksList.innerHTML = '<div style="color: rgba(255,255,255,0.5); text-align: center; padding: 20px; font-size: 14px;">暂无任务，点击右上角添加</div>';
+    return;
+  }
+  
+  tasksList.innerHTML = focusTasks.map((task, index) => `
+    <div class="focus-task-item">
+      <div class="task-checkbox ${task.completed ? 'checked' : ''}" data-index="${index}"></div>
+      <div class="task-text ${task.completed ? 'completed' : ''}">${task.text}</div>
+      <button class="task-delete" data-index="${index}">×</button>
+    </div>
+  `).join('');
+  
+  // 绑定事件
+  tasksList.querySelectorAll('.task-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('click', (e) => {
+      const index = parseInt(e.target.dataset.index);
+      focusTasks[index].completed = !focusTasks[index].completed;
+      saveFocusTasks();
+      renderFocusTasks();
+    });
+  });
+  
+  tasksList.querySelectorAll('.task-delete').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const index = parseInt(e.target.dataset.index);
+      focusTasks.splice(index, 1);
+      saveFocusTasks();
+      renderFocusTasks();
+    });
+  });
+}
+
+// 添加专注任务
+function showAddTaskInput() {
+  const input = $('#newFocusTaskInput');
+  input.classList.remove('hidden');
+  input.focus();
+  
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter') {
+      const text = input.value.trim();
+      if (text) {
+        focusTasks.push({ text, completed: false });
+        saveFocusTasks();
+        renderFocusTasks();
+      }
+      input.value = '';
+      input.classList.add('hidden');
+    } else if (e.key === 'Escape') {
+      input.value = '';
+      input.classList.add('hidden');
+    }
+  };
+  
+  input.onblur = () => {
+    setTimeout(() => {
+      input.classList.add('hidden');
+      input.value = '';
+    }, 200);
+  };
+}
+
+// 更新专注统计显示
+function updateFocusStats() {
+  $('#todayPomodoroCount').textContent = focusStats.todayPomodoros;
+  $('#todayFocusTime').textContent = `${focusStats.todayFocusTime}分钟`;
+}
+
+// 初始化专注模式事件
+function initFocusMode() {
+  const focusBtn = $('#focusBtn');
+  const exitFocusBtn = $('#exitFocusBtn');
+  const focusStartBtn = $('#focusStartBtn');
+  const focusPauseBtn = $('#focusPauseBtn');
+  const focusResetBtn = $('#focusResetBtn');
+  const addFocusTaskBtn = $('#addFocusTaskBtn');
+  const opacitySlider = $('#focusOpacitySlider');
+  const opacityValue = $('#focusOpacityValue');
+  
+  if (focusBtn) focusBtn.addEventListener('click', openFocusMode);
+  if (exitFocusBtn) exitFocusBtn.addEventListener('click', exitFocusMode);
+  if (focusStartBtn) focusStartBtn.addEventListener('click', startFocusTimer);
+  if (focusPauseBtn) focusPauseBtn.addEventListener('click', pauseFocusTimer);
+  if (focusResetBtn) focusResetBtn.addEventListener('click', resetFocusTimer);
+  if (addFocusTaskBtn) addFocusTaskBtn.addEventListener('click', showAddTaskInput);
+  
+  // 透明度控制
+  if (opacitySlider && opacityValue) {
+    // 加载保存的透明度
+    const savedOpacity = localStorage.getItem('startpage.focusOpacity') || '85';
+    opacitySlider.value = savedOpacity;
+    opacityValue.textContent = savedOpacity + '%';
+    
+    opacitySlider.addEventListener('input', (e) => {
+      const opacity = e.target.value;
+      opacityValue.textContent = opacity + '%';
+      updateFocusOpacity(opacity);
+    });
+    
+    opacitySlider.addEventListener('change', (e) => {
+      // 保存透明度设置
+      localStorage.setItem('startpage.focusOpacity', e.target.value);
+    });
+  }
+  
+  // 时长选择按钮
+  document.querySelectorAll('.duration-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const duration = parseInt(e.target.dataset.duration);
+      setFocusDuration(duration);
+    });
+  });
+  
+  // 快捷键支持
+  document.addEventListener('keydown', (e) => {
+    const focusMode = $('#focusMode');
+    if (focusMode.classList.contains('hidden')) return;
+    
+    if (e.key === 'Escape') {
+      exitFocusMode();
+    } else if (e.key === ' ' && e.target.tagName !== 'INPUT') {
+      e.preventDefault();
+      if (focusIsRunning) {
+        pauseFocusTimer();
+      } else {
+        startFocusTimer();
+      }
+    } else if (e.key === 'r' || e.key === 'R') {
+      resetFocusTimer();
+    }
+  });
+}
+
+// 更新专注空间透明度
+function updateFocusOpacity(opacity) {
+  const focusMode = $('#focusMode');
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const opacityValue = parseInt(opacity) / 100;
+  
+  if (isDark) {
+    focusMode.style.background = `rgba(0, 0, 0, ${opacityValue})`;
+  } else {
+    focusMode.style.background = `rgba(255, 255, 255, ${opacityValue})`;
+  }
+}
+
+// 在DOMContentLoaded后初始化
+document.addEventListener('DOMContentLoaded', () => {
+  initFocusMode();
+});
 
 // Note: The app uses a single init() (registered via window.addEventListener('DOMContentLoaded', init))
 // and defensive bindings inside init(). Removed the older duplicate bottom DOMContentLoaded handler
