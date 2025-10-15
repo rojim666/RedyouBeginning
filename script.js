@@ -87,12 +87,44 @@ function renderLinks(){
     const faviconDiv = document.createElement('div');
     faviconDiv.className = 'favicon';
     
+    // 获取首字母作为默认显示
+    function getInitialLetter(title, url) {
+      // 优先使用标题
+      if (title && title.trim()) {
+        const firstChar = title.trim()[0].toUpperCase();
+        // 如果是中文或其他非ASCII字符，直接返回
+        if (firstChar.charCodeAt(0) > 127) {
+          return firstChar;
+        }
+        // 如果是英文字母，返回大写
+        if (/[A-Za-z]/.test(firstChar)) {
+          return firstChar;
+        }
+      }
+      
+      // 如果标题不可用，从URL中提取域名首字母
+      try {
+        const hostname = new URL(url).hostname;
+        const domainName = hostname.replace(/^www\./, '').split('.')[0];
+        if (domainName) {
+          return domainName[0].toUpperCase();
+        }
+      } catch (e) {
+        // URL解析失败
+      }
+      
+      // 最后的备选方案
+      return '?';
+    }
+    
+    // 默认显示首字母
+    const initialLetter = getInitialLetter(l.title, l.url);
+    faviconDiv.textContent = initialLetter;
+    faviconDiv.setAttribute('data-initial', initialLetter);
+    
     // 尝试加载真实的favicon
     const logoSources = getLogoSources(l.url);
     let logoLoaded = false;
-    
-    // 默认显示首字母
-    faviconDiv.textContent = (l.title || l.url)[0] || '?';
     
     // 尝试加载Logo
     if (logoSources.length > 0) {
@@ -102,6 +134,11 @@ function renderLinks(){
       function tryNextSource() {
         if (sourceIndex >= logoSources.length || logoLoaded) {
           faviconDiv.classList.remove('loading');
+          // 如果所有源都失败，确保显示首字母
+          if (!logoLoaded) {
+            faviconDiv.textContent = initialLetter;
+            faviconDiv.classList.add('initial-letter');
+          }
           return;
         }
         
@@ -117,6 +154,7 @@ function renderLinks(){
               faviconDiv.innerHTML = '';
               faviconDiv.appendChild(img);
               faviconDiv.classList.add('has-logo');
+              faviconDiv.classList.remove('initial-letter');
               faviconDiv.style.opacity = '1';
             }, 150);
           }
@@ -138,6 +176,9 @@ function renderLinks(){
       }
       
       tryNextSource();
+    } else {
+      // 没有图标源，直接显示首字母
+      faviconDiv.classList.add('initial-letter');
     }
     
     // 创建元数据部分
@@ -906,32 +947,366 @@ function applyBackground() {
     console.log('Body背景色:', bodyStyles.backgroundColor);
 }
 
-// 图片压缩函数
-function compressImage(file, maxWidth = 1920, quality = 0.8) {
-    return new Promise((resolve) => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+// 优化的图片压缩函数 - 使用先进算法保持最佳画质
+function compressImage(file, options = {}) {
+    return new Promise((resolve, reject) => {
+        const {
+            maxWidth = 2560,
+            maxHeight = 1440,
+            quality = 0.92,
+            mimeType = 'image/jpeg',
+            targetSize = null
+        } = options;
+
         const img = new Image();
         
+        img.onerror = () => reject(new Error('图片加载失败'));
+        
         img.onload = function() {
-            // 计算新的尺寸，保持宽高比
-            let { width, height } = img;
-            if (width > maxWidth) {
-                height = (height * maxWidth) / width;
-                width = maxWidth;
+            try {
+                // 计算新的尺寸，保持宽高比
+                let { width, height } = img;
+                let scale = 1;
+                
+                if (width > maxWidth || height > maxHeight) {
+                    const widthScale = maxWidth / width;
+                    const heightScale = maxHeight / height;
+                    scale = Math.min(widthScale, heightScale);
+                    width = Math.round(width * scale);
+                    height = Math.round(height * scale);
+                }
+                
+                console.log(`图片尺寸: ${img.width}x${img.height} → ${width}x${height} (缩放: ${(scale * 100).toFixed(1)}%)`);
+                
+                // 使用先进的缩放算法
+                let finalCanvas;
+                if (scale < 1) {
+                    // 需要缩小图片，使用高质量的分步缩放算法
+                    finalCanvas = downscaleImage(img, width, height);
+                } else {
+                    // 不需要缩放或放大，直接绘制
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d', { 
+                        alpha: false,
+                        desynchronized: true 
+                    });
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(img, 0, 0, width, height);
+                    finalCanvas = canvas;
+                }
+                
+                // 应用锐化滤镜提升清晰度
+                sharpenImage(finalCanvas);
+                
+                // 如果指定了目标大小，使用二分查找最佳质量
+                if (targetSize) {
+                    findOptimalQuality(finalCanvas, mimeType, targetSize, 0.75, 0.98)
+                        .then(resolve)
+                        .catch(() => {
+                            finalCanvas.toBlob(resolve, mimeType, quality);
+                        });
+                } else {
+                    finalCanvas.toBlob(resolve, mimeType, quality);
+                }
+                
+                // 释放资源
+                URL.revokeObjectURL(img.src);
+                
+            } catch (error) {
+                reject(error);
             }
-            
-            canvas.width = width;
-            canvas.height = height;
-            
-            // 绘制压缩后的图片
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            // 转换为blob
-            canvas.toBlob(resolve, 'image/jpeg', quality);
         };
         
-        img.src = URL.createObjectURL(file);
+        if (file instanceof Blob) {
+            img.src = URL.createObjectURL(file);
+        } else {
+            reject(new Error('不支持的文件类型'));
+        }
+    });
+}
+
+// 高质量降采样算法（Hermite重采样）
+function downscaleImage(img, targetWidth, targetHeight) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { alpha: false });
+    
+    let currentWidth = img.width;
+    let currentHeight = img.height;
+    
+    // 如果缩小比例大于50%，使用分步缩放
+    const scaleRatio = Math.min(targetWidth / currentWidth, targetHeight / currentHeight);
+    
+    if (scaleRatio < 0.5) {
+        console.log('使用分步缩放算法提升清晰度');
+        
+        // 第一步：缩小到2倍目标尺寸
+        let tempCanvas = document.createElement('canvas');
+        let tempCtx = tempCanvas.getContext('2d', { alpha: false });
+        
+        // 计算中间尺寸
+        const steps = [];
+        let ratio = scaleRatio;
+        while (ratio < 0.5) {
+            steps.push(0.5);
+            ratio = ratio / 0.5;
+        }
+        steps.push(ratio);
+        
+        console.log(`分${steps.length}步缩放:`, steps.map(s => (s * 100).toFixed(1) + '%').join(' → '));
+        
+        let sourceCanvas = createCanvasFromImage(img);
+        
+        for (let i = 0; i < steps.length; i++) {
+            const stepRatio = steps[i];
+            const newWidth = Math.round(currentWidth * stepRatio);
+            const newHeight = Math.round(currentHeight * stepRatio);
+            
+            tempCanvas.width = newWidth;
+            tempCanvas.height = newHeight;
+            tempCtx.imageSmoothingEnabled = true;
+            tempCtx.imageSmoothingQuality = 'high';
+            
+            if (i === 0) {
+                tempCtx.drawImage(img, 0, 0, newWidth, newHeight);
+            } else {
+                tempCtx.drawImage(sourceCanvas, 0, 0, newWidth, newHeight);
+            }
+            
+            currentWidth = newWidth;
+            currentHeight = newHeight;
+            
+            // 交换画布
+            if (i < steps.length - 1) {
+                sourceCanvas = tempCanvas;
+                tempCanvas = document.createElement('canvas');
+                tempCtx = tempCanvas.getContext('2d', { alpha: false });
+            }
+        }
+        
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(tempCanvas, 0, 0, targetWidth, targetHeight);
+        
+    } else {
+        // 缩小比例较小，直接缩放
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+    }
+    
+    return canvas;
+}
+
+// 创建画布从图片
+function createCanvasFromImage(img) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { alpha: false });
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
+    return canvas;
+}
+
+// 锐化滤镜 - 提升图像清晰度
+function sharpenImage(canvas) {
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    
+    // 获取图像数据
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+    
+    // 创建输出数据
+    const outputData = new Uint8ClampedArray(data);
+    
+    // 锐化卷积核 (适度锐化，避免过度)
+    const kernel = [
+        0,  -0.15,  0,
+        -0.15,  1.6,  -0.15,
+        0,  -0.15,  0
+    ];
+    
+    console.log('应用锐化滤镜提升清晰度');
+    
+    // 应用卷积
+    for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+            const idx = (y * width + x) * 4;
+            
+            for (let c = 0; c < 3; c++) { // RGB通道
+                let sum = 0;
+                
+                // 3x3卷积
+                for (let ky = -1; ky <= 1; ky++) {
+                    for (let kx = -1; kx <= 1; kx++) {
+                        const pixelIdx = ((y + ky) * width + (x + kx)) * 4 + c;
+                        const kernelIdx = (ky + 1) * 3 + (kx + 1);
+                        sum += data[pixelIdx] * kernel[kernelIdx];
+                    }
+                }
+                
+                outputData[idx + c] = Math.max(0, Math.min(255, sum));
+            }
+            
+            // 保持Alpha通道不变
+            outputData[idx + 3] = data[idx + 3];
+        }
+    }
+    
+    // 将锐化后的数据写回画布
+    const outputImageData = new ImageData(outputData, width, height);
+    ctx.putImageData(outputImageData, 0, 0);
+}
+
+// 二分查找最佳压缩质量
+function findOptimalQuality(canvas, mimeType, targetSize, minQuality = 0.75, maxQuality = 0.98) {
+    return new Promise((resolve, reject) => {
+        let attempts = 0;
+        const maxAttempts = 12; // 增加尝试次数以获得最精确的结果
+        
+        function tryQuality(quality) {
+            return new Promise((resolve) => {
+                canvas.toBlob((blob) => {
+                    resolve({ blob, size: blob.size, quality });
+                }, mimeType, quality);
+            });
+        }
+        
+        async function binarySearch() {
+            let low = minQuality;
+            let high = maxQuality;
+            let bestBlob = null;
+            let bestQuality = minQuality;
+            
+            // 先尝试最高质量
+            const highResult = await tryQuality(maxQuality);
+            const highSizeKB = (highResult.size / 1024).toFixed(0);
+            const targetSizeKB = (targetSize / 1024).toFixed(0);
+            console.log(`最高质量测试: 质量=${maxQuality.toFixed(2)}, 大小=${highSizeKB}KB, 目标=${targetSizeKB}KB`);
+            
+            if (highResult.size <= targetSize) {
+                console.log(`✓ 最高质量(${maxQuality})满足要求，直接使用`);
+                resolve(highResult.blob);
+                return;
+            }
+            
+            // 二分查找
+            while (attempts < maxAttempts && high - low > 0.015) {
+                attempts++;
+                const mid = (low + high) / 2;
+                const result = await tryQuality(mid);
+                const sizeKB = (result.size / 1024).toFixed(0);
+                
+                console.log(`尝试 ${attempts}/${maxAttempts}: 质量=${mid.toFixed(3)}, 大小=${sizeKB}KB`);
+                
+                if (result.size <= targetSize) {
+                    bestBlob = result.blob;
+                    bestQuality = mid;
+                    low = mid; // 尝试更高质量
+                } else {
+                    high = mid; // 降低质量
+                }
+            }
+            
+            if (bestBlob) {
+                const finalSizeKB = (bestBlob.size / 1024).toFixed(0);
+                console.log(`✓ 找到最佳质量: ${bestQuality.toFixed(3)}, 最终大小: ${finalSizeKB}KB`);
+                resolve(bestBlob);
+            } else {
+                console.log(`使用最低质量: ${minQuality}`);
+                const result = await tryQuality(minQuality);
+                resolve(result.blob);
+            }
+        }
+        
+        binarySearch().catch(reject);
+    });
+}
+
+// 智能压缩 - 根据图片特征自动选择最佳压缩策略
+function smartCompress(file) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const fileSizeMB = file.size / 1024 / 1024;
+            const targetSizeMB = 2; // 目标2MB
+            const targetSizeBytes = targetSizeMB * 1024 * 1024;
+            
+            console.log(`原始文件大小: ${fileSizeMB.toFixed(2)}MB`);
+            
+            let compressOptions;
+            
+            // 如果文件已经小于2MB，只进行轻度优化并锐化以提升画质
+            if (file.size < targetSizeBytes) {
+                compressOptions = {
+                    maxWidth: 2560,
+                    maxHeight: 1440,
+                    quality: 0.97,     // 极高质量
+                    mimeType: 'image/jpeg'
+                };
+                console.log('文件小于2MB，使用极高画质模式(0.97) + 锐化');
+            } 
+            // 文件在2-4MB之间
+            else if (fileSizeMB < 4) {
+                compressOptions = {
+                    maxWidth: 2560,
+                    maxHeight: 1440,
+                    quality: 0.95,
+                    targetSize: targetSizeBytes,
+                    mimeType: 'image/jpeg'
+                };
+                console.log('文件2-4MB，使用超高画质(0.95)模式 + 锐化');
+            }
+            // 文件在4-8MB之间
+            else if (fileSizeMB < 8) {
+                compressOptions = {
+                    maxWidth: 2560,
+                    maxHeight: 1440,
+                    targetSize: targetSizeBytes,
+                    mimeType: 'image/jpeg'
+                };
+                console.log('文件4-8MB，自动优化画质(最高0.98) + 锐化');
+            }
+            // 超大文件
+            else {
+                compressOptions = {
+                    maxWidth: 2560,
+                    maxHeight: 1440,
+                    targetSize: targetSizeBytes,
+                    mimeType: 'image/jpeg'
+                };
+                console.log('超大文件，智能压缩到2MB以内 + 锐化');
+            }
+            
+            console.log('压缩配置:', compressOptions);
+            const compressedBlob = await compressImage(file, compressOptions);
+            
+            if (compressedBlob) {
+                const compressedSizeMB = compressedBlob.size / 1024 / 1024;
+                const ratio = ((1 - compressedSizeMB / fileSizeMB) * 100).toFixed(1);
+                console.log(`✓ 压缩完成: ${fileSizeMB.toFixed(2)}MB → ${compressedSizeMB.toFixed(2)}MB (压缩${ratio}%)`);
+                
+                if (compressedBlob.size > targetSizeBytes) {
+                    const overMB = ((compressedBlob.size - targetSizeBytes) / 1024 / 1024).toFixed(2);
+                    console.warn(`⚠ 压缩后仍超过目标${overMB}MB，可能无法保存到localStorage`);
+                }
+                
+                resolve(compressedBlob);
+            } else {
+                reject(new Error('压缩失败'));
+            }
+            
+        } catch (error) {
+            console.error('智能压缩出错:', error);
+            reject(error);
+        }
     });
 }
 
@@ -947,23 +1322,31 @@ function handleFileUpload(file) {
     console.log('原始文件:', file.type, '大小:', (file.size / 1024 / 1024).toFixed(2) + 'MB');
     
     // 显示处理中的提示
-    showToast('正在处理图片，请稍候...');
-    
-    // 如果文件很大，先压缩
-    const maxSize = 2 * 1024 * 1024; // 2MB
-    if (file.size > maxSize) {
-        console.log('文件过大，开始压缩...');
-        compressImage(file).then(compressedBlob => {
-            if (compressedBlob) {
-                console.log('压缩完成，新大小:', (compressedBlob.size / 1024 / 1024).toFixed(2) + 'MB');
-                processImageFile(compressedBlob);
-            } else {
-                showToast('图片压缩失败');
-            }
-        });
+    const fileSizeMB = file.size / 1024 / 1024;
+    if (fileSizeMB > 10) {
+        showToast('图片较大，正在智能压缩，请稍候...');
     } else {
-        processImageFile(file);
+        showToast('正在优化图片质量...');
     }
+    
+    // 所有图片都使用智能压缩以保证在2MB以下且质量最优
+    smartCompress(file).then(compressedBlob => {
+        if (compressedBlob) {
+            const compressedSizeMB = compressedBlob.size / 1024 / 1024;
+            console.log('处理完成，最终大小:', compressedSizeMB.toFixed(2) + 'MB');
+            
+            if (compressedSizeMB > 2) {
+                showToast(`图片已优化但仍较大(${compressedSizeMB.toFixed(1)}MB)，可能无法保存`);
+            }
+            
+            processImageFile(compressedBlob);
+        } else {
+            showToast('图片处理失败');
+        }
+    }).catch(error => {
+        console.error('处理出错:', error);
+        showToast('图片处理失败，请尝试其他图片');
+    });
 }
 
 function processImageFile(file) {
@@ -987,18 +1370,27 @@ function processImageFile(file) {
             
         } catch (error) {
             if (error.name === 'QuotaExceededError') {
-                console.warn('localStorage配额超出，尝试进一步压缩...');
+                console.warn('localStorage配额超出，尝试更高压缩率...');
                 
-                // 如果还是太大，尝试更高的压缩率
+                // 如果还是太大，尝试更激进的压缩
                 if (file instanceof Blob) {
                     const originalFile = new File([file], 'compressed.jpg', { type: 'image/jpeg' });
-                    compressImage(originalFile, 1280, 0.6).then(smallerBlob => {
+                    compressImage(originalFile, {
+                        maxWidth: 1280,
+                        maxHeight: 720,
+                        targetSize: 800 * 1024, // 目标800KB
+                        quality: 0.75
+                    }).then(smallerBlob => {
                         if (smallerBlob) {
+                            console.log('二次压缩完成:', (smallerBlob.size / 1024).toFixed(0) + 'KB');
                             processImageFile(smallerBlob);
                         } else {
                             showToast('图片过大，仅临时应用');
                             closeBackgroundDialog();
                         }
+                    }).catch(() => {
+                        showToast('图片压缩失败，仅临时应用');
+                        closeBackgroundDialog();
                     });
                 } else {
                     showToast('图片已应用，但无法永久保存（文件过大）');
