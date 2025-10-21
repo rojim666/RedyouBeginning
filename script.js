@@ -6,11 +6,55 @@ const defaultLinks = [
   {title: '掘金', url: 'https://juejin.cn'}
 ];
 
+// 本地语录库（当API失败时使用）
+const localQuotes = [
+  { text: '成功的秘密在于始终如一地忠于目标', author: '富兰克林' },
+];
+
+// 性能优化：防抖函数
+function debounce(func, delay = 300) {
+  let timeoutId;
+  return function(...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func(...args), delay);
+  };
+}
+
+// 性能优化：节流函数
+function throttle(func, limit = 300) {
+  let lastCall = 0;
+  return function(...args) {
+    const now = Date.now();
+    if (now - lastCall >= limit) {
+      lastCall = now;
+      func(...args);
+    }
+  };
+}
+
+// 性能优化：DOM 元素缓存
+const domCache = {};
+function getCachedElement(selector) {
+  if (!domCache[selector]) {
+    domCache[selector] = document.querySelector(selector);
+  }
+  return domCache[selector];
+}
+
 // state
 let links = [];
 
 // 收藏夹管理
 let bookmarks = JSON.parse(localStorage.getItem('startpage.bookmarks') || '[]');
+// 迁移：确保所有书签都有 visible 和 showLogo 字段
+bookmarks = bookmarks.map(b => ({ 
+  ...b, 
+  visible: b.visible !== false ? true : false,
+  showLogo: b.showLogo !== false ? true : false
+}));
+
+// 桌面书签开关
+let bookmarksEnabled = localStorage.getItem('startpage.bookmarksEnabled') === 'true';
 
 // helpers
 function $(s){return document.querySelector(s)}
@@ -48,48 +92,44 @@ function updateClock(){
 async function loadQuote() {
   const quoteText = $('#quoteText');
   const quoteAuthor = $('#quoteAuthor');
-  
-  // 本地备用语录库
-  const localQuotes = [
-    { text: '生活不是等待风暴过去，而是学会在雨中翩翩起舞。', author: '佚名' },
-    { text: '你的时间有限，不要浪费时间活在别人的生活里。', author: 'Steve Jobs' },
-    { text: '成功不是终点，失败也不是致命的，重要的是继续前进的勇气。', author: 'Winston Churchill' },
-    { text: '唯一限制我们明天的，是我们对今天的怀疑。', author: 'Franklin D. Roosevelt' },
-    { text: '不要问国家能为你做什么，而要问你能为国家做什么。', author: 'John F. Kennedy' },
-    { text: '黑暗不能驱走黑暗，只有光明能做到；仇恨不能驱走仇恨，只有爱能做到。', author: 'Martin Luther King Jr.' },
-    { text: '保持饥饿，保持愚蠢。', author: 'Steve Jobs' },
-    { text: '人生苦短，我用Python。', author: '程序员' },
-    { text: '设计不只是看起来怎么样，感觉怎么样，设计是如何运作。', author: 'Steve Jobs' },
-    { text: '简单是复杂的终极形式。', author: 'Leonardo da Vinci' }
-  ];
-  
+
   try {
-    // 使用 tenapi 一言API
-    const formData = new FormData();
-    formData.append('format', 'json');
+    // 使用 nxvav 一言API，添加超时控制
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
     
-    const response = await fetch('https://tenapi.cn/v2/yiyan', {
-      method: 'POST',
-      body: formData
+    const response = await fetch('https://api.nxvav.cn/api/yiyan/?encode=json&charset=utf-8', {
+      method: 'GET',
+      signal: controller.signal
     });
     
-    if (response.ok) {
-      const result = await response.json();
-      if (result.code === 200 && result.data) {
-        const data = result.data;
-        quoteText.textContent = `"${data.hitokoto}"`;
-        // 优先显示来源，其次是作者
-        const authorText = data.source || data.author || '佚名';
-        quoteAuthor.textContent = authorText;
-      } else {
-        throw new Error('API返回数据异常');
-      }
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    
+    // nxvav API 返回格式: { id: number, yiyan: "...", nick: "...", createTime: number }
+    if (result && result.yiyan) {
+      quoteText.textContent = `"${result.yiyan}"`;
+      // 显示作者昵称
+      const authorText = result.nick || '佚名';
+      quoteAuthor.textContent = authorText;
+      return; // 成功加载，退出函数
     } else {
-      throw new Error('API请求失败');
+      console.warn('一言API返回数据格式异常:', result);
+      throw new Error('API返回数据格式异常');
     }
   } catch (error) {
-    console.warn('一言API加载失败，使用本地语录:', error);
     // API失败时使用本地语录
+    if (error.name === 'AbortError') {
+      console.warn('一言API请求超时，使用本地语录');
+    } else {
+      console.warn('一言API加载失败，使用本地语录:', error.message);
+    }
+    
     const randomQuote = localQuotes[Math.floor(Math.random() * localQuotes.length)];
     quoteText.textContent = `"${randomQuote.text}"`;
     quoteAuthor.textContent = randomQuote.author;
@@ -461,6 +501,165 @@ function renderLinks(){
   })
 }
 
+// 渲染桌面书签（当用户在设置中启用时）
+function renderDesktopBookmarks(){
+  const container = $('#linksGrid');
+  if (!container) return;
+
+  if (!bookmarksEnabled) {
+    // 如果未启用，显示正常的快速链接
+    renderLinks();
+    container.classList.remove('desktop-bookmarks');
+    return;
+  }
+
+  container.innerHTML = '';
+  container.classList.add('desktop-bookmarks');
+
+  if (!bookmarks || bookmarks.length === 0) {
+    container.innerHTML = `<div style="text-align:center;color:var(--muted);padding:24px;">没有桌面书签，打开设置 → 收藏夹 添加</div>`;
+    return;
+  }
+
+  // 使用 DocumentFragment 来批量插入 DOM 节点，减少重排
+  const fragment = document.createDocumentFragment();
+  const visibleBookmarks = bookmarks.filter(b => b.visible !== false);
+
+  visibleBookmarks.forEach(b => {
+    const a = document.createElement('a');
+    a.className = 'link-card desktop-bookmark-card';
+    a.href = b.url;
+    a.target = '_blank';
+    a.title = b.url;
+    
+    // 使用 innerHTML 和模板字符串替代大量 createElement，提升性能
+    let contentHTML = '<div class="desktop-bookmark-content" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;">';
+    
+    if (b.showLogo !== false && b.favicon) {
+      contentHTML += `<div class="desktop-bookmark-favicon" style="width:32px;height:32px;border-radius:6px;overflow:hidden;"><img src="${escapeHtml(b.favicon)}" style="width:100%;height:100%;object-fit:contain;"></div>`;
+    }
+    
+    contentHTML += `<span style="font-size:13px;font-weight:500;">${escapeHtml(b.title || b.url)}</span>`;
+    contentHTML += '</div>';
+    
+    a.innerHTML = contentHTML;
+    
+    // 添加编辑按钮（保持事件监听器）
+    const editBtn = document.createElement('button');
+    editBtn.className = 'bookmark-edit-btn';
+    editBtn.innerHTML = '⋮';
+    editBtn.type = 'button';
+    editBtn.setAttribute('title', '编辑书签');
+    editBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openBookmarkEditor(b);
+    });
+    a.appendChild(editBtn);
+    
+    fragment.appendChild(a);
+  });
+
+  container.appendChild(fragment);
+}
+
+// 打开单个书签编辑器
+function openBookmarkEditor(bookmark){
+  const dialog = document.createElement('dialog');
+  dialog.className = 'bookmark-editor-dialog';
+  dialog.innerHTML = `
+    <div class="bookmark-editor">
+      <h3 style="margin-top:0;">编辑书签</h3>
+      <div class="editor-field">
+        <label>标题</label>
+        <input type="text" id="editor-title" placeholder="书签标题" value="${escapeHtml(bookmark.title || '')}">
+      </div>
+      <div class="editor-field">
+        <label>链接</label>
+        <input type="text" id="editor-url" placeholder="https://example.com" value="${escapeHtml(bookmark.url || '')}">
+      </div>
+      <div class="editor-field" style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="editor-show-logo" ${bookmark.showLogo !== false ? 'checked' : ''}>
+        <label style="margin:0;flex:1;">显示 Logo</label>
+      </div>
+      ${bookmark.favicon ? `
+        <div class="editor-field" style="text-align:center;">
+          <img src="${bookmark.favicon}" style="max-width:48px;max-height:48px;border-radius:6px;">
+          <small style="display:block;margin-top:6px;color:var(--muted);">Logo 已加载</small>
+        </div>
+      ` : `
+        <div class="editor-field" style="text-align:center;">
+          <small style="color:var(--muted);">Logo 加载中或失败...</small>
+        </div>
+      `}
+      <div class="editor-actions">
+        <button id="editor-reload-logo" class="btn-secondary" type="button">重新加载Logo</button>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button id="editor-cancel" class="btn-secondary" style="flex:1;">取消</button>
+          <button id="editor-save" class="btn-primary" style="flex:1;">保存</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(dialog);
+  
+  const saveBtn = dialog.querySelector('#editor-save');
+  const cancelBtn = dialog.querySelector('#editor-cancel');
+  const reloadBtn = dialog.querySelector('#editor-reload-logo');
+  const titleInput = dialog.querySelector('#editor-title');
+  const urlInput = dialog.querySelector('#editor-url');
+  const logoCheckbox = dialog.querySelector('#editor-show-logo');
+  
+  reloadBtn.addEventListener('click', () => {
+    reloadBtn.disabled = true;
+    reloadBtn.textContent = '加载中...';
+    const url = urlInput.value.trim();
+    if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+      bookmark.url = url;
+      loadBookmarkFavicon(bookmark, null);
+      setTimeout(() => {
+        reloadBtn.disabled = false;
+        reloadBtn.textContent = '重新加载Logo';
+        saveBookmarks();
+        // 刷新编辑器显示
+        if (bookmark.favicon) {
+          const faviconDiv = dialog.querySelector('.editor-field img');
+          if (faviconDiv) {
+            faviconDiv.src = bookmark.favicon;
+          }
+        }
+      }, 3500);
+    } else {
+      showToast('请输入有效的URL');
+      reloadBtn.disabled = false;
+      reloadBtn.textContent = '重新加载Logo';
+    }
+  });
+  
+  saveBtn.addEventListener('click', () => {
+    bookmark.title = titleInput.value.trim() || bookmark.url;
+    bookmark.url = urlInput.value.trim();
+    bookmark.showLogo = logoCheckbox.checked;
+    saveBookmarks();
+    renderDesktopBookmarks();
+    renderBookmarks();
+    dialog.close();
+    document.body.removeChild(dialog);
+  });
+  
+  cancelBtn.addEventListener('click', () => {
+    dialog.close();
+    document.body.removeChild(dialog);
+  });
+  
+  dialog.addEventListener('cancel', () => {
+    document.body.removeChild(dialog);
+  });
+  
+  dialog.showModal();
+}
+
 // editor dialog
 function openEditor(){
   const dialog = $('#editDialog');
@@ -473,7 +672,99 @@ function openEditor(){
     row.querySelector('.remove').addEventListener('click',()=>{ links.splice(idx,1); openEditor(); });
     editor.appendChild(row);
   });
+  
+  // 也渲染收藏夹编辑器
+  renderBookmarksEditor();
+  
   dialog.showModal();
+}
+
+// 渲染收藏夹编辑器
+function renderBookmarksEditor(){
+  const container = document.getElementById('bookmarksEditor');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  
+  if (bookmarks.length === 0) {
+    container.innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px;">还没有收藏夹</div>`;
+    return;
+  }
+  
+  // 添加表头
+  const header = document.createElement('div');
+  header.style.cssText = 'display:grid;grid-template-columns:40px 1fr 50px;gap:12px;align-items:center;padding:8px;margin-bottom:12px;border-bottom:1px solid var(--control-border);font-weight:600;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;';
+  header.innerHTML = `
+    <div style="text-align:center;">显示</div>
+    <div>书签</div>
+    <div></div>
+  `;
+  container.appendChild(header);
+  
+  bookmarks.forEach((b, idx) => {
+    const row = document.createElement('div');
+    row.className = 'bookmark-row';
+    row.style.cssText = 'display:grid;grid-template-columns:40px 1fr 50px;gap:12px;align-items:center;padding:12px;border-radius:8px;border:1px solid var(--control-border);margin-bottom:8px;transition:all 0.2s;background:var(--control-bg);';
+    
+    row.addEventListener('mouseenter', () => {
+      row.style.background = 'var(--control-bg-hover)';
+      row.style.borderColor = 'rgba(0, 122, 255, 0.3)';
+    });
+    
+    row.addEventListener('mouseleave', () => {
+      row.style.background = 'var(--control-bg)';
+      row.style.borderColor = 'var(--control-border)';
+    });
+    
+    // 可见性复选框
+    const checkboxDiv = document.createElement('div');
+    checkboxDiv.style.cssText = 'display:flex;align-items:center;justify-content:center;';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = b.visible !== false;
+    checkbox.style.cssText = 'width:18px;height:18px;cursor:pointer;';
+    checkbox.title = '显示/隐藏';
+    checkbox.addEventListener('change', (e) => {
+      b.visible = e.target.checked;
+      saveBookmarks();
+      renderDesktopBookmarks();
+    });
+    checkboxDiv.appendChild(checkbox);
+    
+    // 标题和URL
+    const info = document.createElement('div');
+    info.style.cssText = 'min-width:0;';
+    info.innerHTML = `
+      <div style="font-size:14px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(b.title)}</div>
+      <div style="font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;">${escapeHtml(b.url)}</div>
+    `;
+    
+    // 编辑按钮
+    const btnDiv = document.createElement('div');
+    btnDiv.style.cssText = 'display:flex;justify-content:center;';
+    const editBtn = document.createElement('button');
+    editBtn.className = 'icon-btn';
+    editBtn.type = 'button';
+    editBtn.title = '编辑';
+    editBtn.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+    editBtn.style.cssText = 'padding:6px;';
+    editBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      $('#editDialog').close();
+      setTimeout(() => openBookmarkEditor(b), 100);
+    });
+    btnDiv.appendChild(editBtn);
+    
+    row.appendChild(checkboxDiv);
+    row.appendChild(info);
+    row.appendChild(btnDiv);
+    container.appendChild(row);
+  });
 }
 
 function escapeHtml(s){ return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
@@ -502,6 +793,8 @@ function addLinkRow(){
 
 function openBookmarksPanel() {
   console.log('正在打开收藏夹面板...');
+  const settingsPanel = document.getElementById('settingsPanel');
+  if (settingsPanel) settingsPanel.classList.remove('show');
   const panel = document.getElementById('bookmarksPanel');
   const overlay = document.getElementById('bookmarksOverlay');
 
@@ -561,6 +854,8 @@ function playBookmarkEntrance() {
 
 function saveBookmarks() {
   localStorage.setItem('startpage.bookmarks', JSON.stringify(bookmarks));
+  // 更新桌面视图（如果启用）
+  renderDesktopBookmarks();
 }
 
 function addBookmark(title, url, folder = 'default') {
@@ -570,6 +865,8 @@ function addBookmark(title, url, folder = 'default') {
     url: url.trim(),
     folder,
     favicon: null,
+    visible: true, // 默认显示
+    showLogo: true, // 默认显示logo
     timestamp: Date.now()
   };
   
@@ -577,12 +874,18 @@ function addBookmark(title, url, folder = 'default') {
   saveBookmarks();
   renderBookmarks();
   showToast('书签已添加');
+  
+  // 异步加载favicon
+  loadBookmarkFavicon(bookmark, null);
+  
+  renderDesktopBookmarks();
 }
 
 function removeBookmark(id) {
   bookmarks = bookmarks.filter(b => b.id !== id);
   saveBookmarks();
   renderBookmarks();
+  renderDesktopBookmarks();
 }
 
 function renderBookmarks(searchTerm = '') {
@@ -599,7 +902,7 @@ function renderBookmarks(searchTerm = '') {
     return;
   }
   
-  // 筛选书签
+  // 筛选书签（不根据visible过滤，这样隐藏的书签也能看到）
   const filtered = bookmarks.filter(bookmark => 
     bookmark.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     bookmark.url.toLowerCase().includes(searchTerm.toLowerCase())
@@ -614,88 +917,180 @@ function renderBookmarks(searchTerm = '') {
     return;
   }
   
-  // 渲染书签
+  // 渲染书签 - 使用 DocumentFragment 优化性能
+  const fragment = document.createDocumentFragment();
+  
   filtered.forEach(bookmark => {
     const item = document.createElement('a');
     item.className = 'bookmark-item';
     item.href = bookmark.url;
     item.target = '_blank';
+    item.dataset.bookmarkId = bookmark.id; // 存储 ID 便于事件委托
     
-    // 创建图标
-    const icon = document.createElement('div');
-    icon.className = 'bookmark-icon';
-    
-    if (bookmark.favicon) {
-      const img = document.createElement('img');
-      img.src = bookmark.favicon;
-      img.onerror = () => {
-        icon.innerHTML = bookmark.title.charAt(0).toUpperCase();
-      };
-      icon.appendChild(img);
-    } else {
-      icon.textContent = bookmark.title.charAt(0).toUpperCase();
-      // 尝试加载favicon
-      loadBookmarkFavicon(bookmark, icon);
+    // 如果书签隐藏，添加样式但保持可交互
+    if (bookmark.visible === false) {
+      item.style.opacity = '0.5';
+      item.onclick = (e) => e.preventDefault();
     }
     
-    // 创建内容
-    const content = document.createElement('div');
-    content.className = 'bookmark-content';
-    content.innerHTML = `
-      <div class="bookmark-title">${escapeHtml(bookmark.title)}</div>
-      <div class="bookmark-url">${escapeHtml(bookmark.url)}</div>
+    // 使用 innerHTML 创建图标和内容，提升性能
+    let iconHTML = '';
+    if (bookmark.favicon) {
+      iconHTML = `<div class="bookmark-icon"><img src="${escapeHtml(bookmark.favicon)}" onerror="this.parentElement.innerHTML='${bookmark.title.charAt(0).toUpperCase()}'"></div>`;
+    } else {
+      iconHTML = `<div class="bookmark-icon">${bookmark.title.charAt(0).toUpperCase()}</div>`;
+    }
+    
+    item.innerHTML = `
+      ${iconHTML}
+      <div class="bookmark-content">
+        <div class="bookmark-title">${escapeHtml(bookmark.title)}</div>
+        <div class="bookmark-url">${escapeHtml(bookmark.url)}</div>
+      </div>
+      <button class="icon-btn visibility-btn" type="button" style="opacity:0;" title="${bookmark.visible !== false ? '隐藏书签' : '显示书签'}" data-action="toggle-visibility">
+        ${bookmark.visible !== false ? `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 5C7 5 2.73 8.11 1 12.46c1.73 4.35 6 7.54 11 7.54s9.27-3.19 11-7.54C21.27 8.11 17 5 12 5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        ` : `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-5 0-9.27-3.19-11-7.54.5-1.35 1.26-2.62 2.22-3.74M9.88 9.88a3 3 0 0 0 4.24 4.24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        `}
+      </button>
+      <button class="icon-btn delete-btn" type="button" style="opacity:0;" title="删除书签" data-action="delete">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
     `;
     
-    // 创建删除按钮
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'icon-btn';
-    deleteBtn.style.opacity = '0';
-    deleteBtn.title = '删除书签';
-    deleteBtn.innerHTML = `
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
-    `;
-    
-    deleteBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (confirm('确定要删除这个书签吗？')) {
-        removeBookmark(bookmark.id);
-      }
-    });
-    
-    // 悬停显示删除按钮
+    // 悬停显示按钮
     item.addEventListener('mouseenter', () => {
-      deleteBtn.style.opacity = '1';
+      item.querySelector('.visibility-btn').style.opacity = '1';
+      item.querySelector('.delete-btn').style.opacity = '1';
     });
     item.addEventListener('mouseleave', () => {
-      deleteBtn.style.opacity = '0';
+      item.querySelector('.visibility-btn').style.opacity = '0';
+      item.querySelector('.delete-btn').style.opacity = '0';
     });
     
-    item.appendChild(icon);
-    item.appendChild(content);
-    item.appendChild(deleteBtn);
-    container.appendChild(item);
+    fragment.appendChild(item);
   });
+
+  container.appendChild(fragment);
+  
+  // 使用事件委托处理按钮点击
+  container.addEventListener('click', handleBookmarkActions, true);
+}
+
+// 事件委托处理书签列表中的所有按钮操作
+function handleBookmarkActions(e) {
+  const action = e.target.closest('[data-action]');
+  if (!action) return;
+  
+  const item = e.target.closest('.bookmark-item');
+  if (!item) return;
+  
+  const bookmarkId = parseInt(item.dataset.bookmarkId);
+  const bookmark = bookmarks.find(b => b.id === bookmarkId);
+  if (!bookmark) return;
+  
+  const actionType = action.getAttribute('data-action');
+  
+  if (actionType === 'delete') {
+    e.preventDefault();
+    e.stopPropagation();
+    if (confirm('确定要删除这个书签吗？')) {
+      removeBookmark(bookmark.id);
+    }
+  } else if (actionType === 'toggle-visibility') {
+    e.preventDefault();
+    e.stopPropagation();
+    bookmark.visible = bookmark.visible === false ? true : false;
+    saveBookmarks();
+    const searchTerm = document.getElementById('bookmarksSearch')?.value || '';
+    renderBookmarks(searchTerm);
+    renderDesktopBookmarks();
+    showToast(bookmark.visible ? '已显示书签' : '已隐藏书签');
+  }
 }
 
 function loadBookmarkFavicon(bookmark, iconElement) {
+  // 使用 requestIdleCallback 延迟加载 favicon，避免阻塞主线程
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      loadFaviconInternal(bookmark, iconElement);
+    }, { timeout: 5000 });
+  } else {
+    // 降级方案：使用 setTimeout
+    setTimeout(() => {
+      loadFaviconInternal(bookmark, iconElement);
+    }, 100);
+  }
+}
+
+function loadFaviconInternal(bookmark, iconElement) {
   try {
-    const domain = new URL(bookmark.url).origin;
-    const faviconUrl = `https://www.google.com/s2/favicons?domain=${new URL(bookmark.url).hostname}&sz=32`;
-    
-    const img = new Image();
-    img.onload = function() {
-      if (img.width > 0 && img.height > 0) {
-        iconElement.innerHTML = '';
-        iconElement.appendChild(img);
-        // 保存favicon URL
-        bookmark.favicon = faviconUrl;
-        saveBookmarks();
-      }
-    };
-    img.src = faviconUrl;
+    const hostname = new URL(bookmark.url).hostname;
+    const candidates = [
+      `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`,
+      `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`,
+      `https://icons.duckduckgo.com/ip3/${hostname}.ico`,
+      `https://${hostname}/favicon.ico`
+    ];
+
+    let tried = 0;
+    let loaded = false;
+
+    function tryLoad(src) {
+      if (loaded) return;
+      const img = new Image();
+      let done = false;
+      const timeout = setTimeout(() => {
+        done = true;
+        img.src = '';
+        next();
+      }, 3000);
+
+      img.onload = function() {
+        if (done) return;
+        clearTimeout(timeout);
+        if (img.width > 0 && img.height > 0) {
+          loaded = true;
+          bookmark.favicon = src;
+          saveBookmarks();
+          
+          if (iconElement) {
+            iconElement.innerHTML = '';
+            img.width = 40;
+            img.height = 40;
+            img.style.borderRadius = '8px';
+            iconElement.appendChild(img);
+          }
+          
+          renderDesktopBookmarks();
+        } else {
+          next();
+        }
+      };
+      img.onerror = function() {
+        if (done) return;
+        clearTimeout(timeout);
+        next();
+      };
+      img.src = src;
+    }
+
+    function next() {
+      tried++;
+      if (tried >= candidates.length) return;
+      tryLoad(candidates[tried]);
+    }
+
+    tryLoad(candidates[0]);
   } catch (e) {
     // URL无效，保持默认显示
   }
@@ -735,6 +1130,8 @@ function parseBookmarkFile(content, fileType) {
       url: item.url || item.href,
       folder: 'imported',
       favicon: null,
+      visible: true,
+      showLogo: true,
       timestamp: Date.now()
     }));
   } else {
@@ -751,6 +1148,8 @@ function parseBookmarkFile(content, fileType) {
           url: link.href,
           folder: 'imported',
           favicon: null,
+          visible: true,
+          showLogo: true,
           timestamp: Date.now()
         });
       }
@@ -768,6 +1167,11 @@ function parseBookmarkFile(content, fileType) {
       // play entrance animation for newly rendered items
       requestAnimationFrame(() => playBookmarkEntrance());
       showToast(`成功导入 ${validImported.length} 个书签`);
+      
+      // 异步加载所有导入书签的favicon
+      validImported.forEach(b => {
+        loadBookmarkFavicon(b, null);
+      });
     } else {
       showToast('没有找到有效或新的书签可导入');
     }
@@ -853,10 +1257,10 @@ function showSearchSuggestions() {
     // 显示最近的搜索记录
     renderSearchSuggestions(searchHistory.slice(0, 8));
   } else {
-    // 筛选匹配的搜索记录
-    const filtered = searchHistory.filter(item => 
-      item.query.toLowerCase().includes(query)
-    ).slice(0, 8);
+    // 筛选匹配的搜索记录 - 性能优化：限制处理范围
+    const filtered = searchHistory
+      .filter(item => item.query.toLowerCase().includes(query))
+      .slice(0, 8);
     renderSearchSuggestions(filtered);
   }
 }
@@ -869,6 +1273,9 @@ function renderSearchSuggestions(items) {
     suggestions.classList.add('hidden');
     return;
   }
+  
+  // 使用 DocumentFragment 优化 DOM 插入
+  const fragment = document.createDocumentFragment();
   
   items.forEach((item, index) => {
     const div = document.createElement('div');
@@ -886,7 +1293,7 @@ function renderSearchSuggestions(items) {
       onSearch(new Event('submit'));
     });
     
-    suggestions.appendChild(div);
+    fragment.appendChild(div);
   });
   
   // 添加清空记录按钮
@@ -895,9 +1302,10 @@ function renderSearchSuggestions(items) {
     clearBtn.className = 'clear-history-btn';
     clearBtn.textContent = '清空搜索记录';
     clearBtn.addEventListener('click', clearSearchHistory);
-    suggestions.appendChild(clearBtn);
+    fragment.appendChild(clearBtn);
   }
   
+  suggestions.appendChild(fragment);
   suggestions.classList.remove('hidden');
 }
 
@@ -1818,6 +2226,62 @@ function bindBackgroundEvents() {
     setupDragAndDrop();
 }
 
+// 设置面板控制
+function initSettingsPanel() {
+  const settingsFab = $('#settingsFab');
+  const settingsPanel = $('#settingsPanel');
+  
+  if (!settingsFab || !settingsPanel) return;
+  
+  // 切换设置面板显示/隐藏
+  settingsFab.addEventListener('click', (e) => {
+    e.stopPropagation();
+    settingsPanel.classList.toggle('show');
+  });
+  
+  // 阻止面板内点击冒泡到document
+  settingsPanel.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+  
+  // 点击页面其他地方关闭设置面板
+  document.addEventListener('click', (e) => {
+    if (!settingsPanel.contains(e.target) && !settingsFab.contains(e.target)) {
+      settingsPanel.classList.remove('show');
+    }
+  });
+  
+  // 绑定面板中的按钮事件
+  const panelSoundBtn = $('#panelSoundBtn');
+  const panelFocusBtn = $('#panelFocusBtn');
+  const panelBgBtn = $('#panelBgBtn');
+  
+  if (panelSoundBtn) {
+    panelSoundBtn.addEventListener('click', (e) => {
+      e.stopPropagation(); // 阻止事件冒泡
+      settingsPanel.classList.remove('show');
+      const soundPanel = $('#soundPanel');
+      if (soundPanel) {
+        soundPanel.classList.remove('hidden');
+      }
+    });
+  }
+  
+  if (panelFocusBtn) {
+    panelFocusBtn.addEventListener('click', () => {
+      settingsPanel.classList.remove('show');
+      openFocusMode();
+    });
+  }
+  
+  if (panelBgBtn) {
+    panelBgBtn.addEventListener('click', () => {
+      settingsPanel.classList.remove('show');
+      openBackgroundDialog();
+    });
+  }
+}
+
 // init
 function init(){
   loadState();
@@ -1831,19 +2295,56 @@ function init(){
   // 每小时更新一次天气
   setInterval(loadWeather, 3600000);
 
+  // 初始化设置面板
+  initSettingsPanel();
+
   // events
   $('#searchForm').addEventListener('submit', onSearch);
   $('#editLinksBtn').addEventListener('click', openEditor);
   $('#addLinkBtn').addEventListener('click', addLinkRow);
   $('#saveLinksBtn').addEventListener('click', saveEditor);
   $('#cancelEditBtn').addEventListener('click', ()=>$('#editDialog').close());
+  
+  // 编辑对话框标签页切换
+  const editTabs = document.getElementById('editTabs');
+  if (editTabs) {
+    editTabs.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('tab-btn')) return;
+      
+      const tabName = e.target.getAttribute('data-tab');
+      const title = document.getElementById('editDialogTitle');
+      
+      // 更新标签页按钮状态
+      editTabs.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn === e.target);
+      });
+      
+      // 更新内容面板
+      document.querySelectorAll('.edit-panel').forEach(panel => {
+        panel.classList.remove('active');
+      });
+      
+      if (tabName === 'bookmarks') {
+        document.getElementById('bookmarksEditPanel').classList.add('active');
+        title.textContent = '编辑收藏夹';
+        document.getElementById('addLinkBtn').textContent = '添加收藏夹';
+      } else {
+        document.getElementById('linksPanel').classList.add('active');
+        title.textContent = '编辑快速链接';
+        document.getElementById('addLinkBtn').textContent = '添加快速链接';
+      }
+    });
+  }
+  
   // theme toggle: call toggleTheme and update aria-pressed (loadTheme will sync it)
   $('#themeToggle').addEventListener('click', (e)=>{ toggleTheme(); });
   
-  // 搜索建议事件
+  // 搜索建议事件 - 使用防抖优化搜索建议渲染
   const searchInput = $('#searchInput');
+  const debouncedShowSuggestions = debounce(showSearchSuggestions, 150);
+  
   searchInput.addEventListener('focus', showSearchSuggestions);
-  searchInput.addEventListener('input', showSearchSuggestions);
+  searchInput.addEventListener('input', debouncedShowSuggestions);
   searchInput.addEventListener('blur', () => {
     // 延迟隐藏，允许点击建议项
     setTimeout(hideSearchSuggestions, 200);
@@ -1892,20 +2393,41 @@ function init(){
   bindBackgroundEvents();
   // bookmarks bindings (defensive: check elements exist before binding)
   const bookmarksBtn = document.getElementById('bookmarksBtn');
+  const panelBookmarksBtn = document.getElementById('panelBookmarksBtn');
   const bookmarksOverlay = document.getElementById('bookmarksOverlay');
   const bookmarksCloseBtn = document.getElementById('closeBookmarksBtn');
   const bookmarkSearchInput = document.getElementById('bookmarksSearch');
   const addBookmarkBtn = document.getElementById('addBookmarkBtn');
   const importBookmarksBtn = document.getElementById('importBookmarksBtn');
   const exportBookmarksBtn = document.getElementById('exportBookmarksBtn');
+  const desktopToggle = document.getElementById('desktopBookmarksToggle');
 
   if (bookmarksBtn) bookmarksBtn.addEventListener('click', openBookmarksPanel);
+  if (panelBookmarksBtn) panelBookmarksBtn.addEventListener('click', openBookmarksPanel);
   if (bookmarksOverlay) bookmarksOverlay.addEventListener('click', closeBookmarksPanel);
   if (bookmarksCloseBtn) bookmarksCloseBtn.addEventListener('click', closeBookmarksPanel);
-  if (bookmarkSearchInput) bookmarkSearchInput.addEventListener('input', (e) => { renderBookmarks(e.target.value); });
+  
+  // 使用防抖优化搜索输入，避免频繁触发渲染
+  if (bookmarkSearchInput) {
+    bookmarkSearchInput.addEventListener('input', debounce((e) => { 
+      renderBookmarks(e.target.value); 
+    }, 200));
+  }
   if (addBookmarkBtn) addBookmarkBtn.addEventListener('click', promptAddBookmark);
   if (importBookmarksBtn) importBookmarksBtn.addEventListener('click', handleBookmarkImport);
   if (exportBookmarksBtn) exportBookmarksBtn.addEventListener('click', exportBookmarks);
+  if (desktopToggle) {
+    desktopToggle.checked = bookmarksEnabled;
+    desktopToggle.addEventListener('change', (e) => {
+      bookmarksEnabled = !!e.target.checked;
+      localStorage.setItem('startpage.bookmarksEnabled', bookmarksEnabled);
+      renderDesktopBookmarks();
+      showToast(bookmarksEnabled ? '已启用桌面书签' : '已关闭桌面书签');
+    });
+  }
+
+  // 初始渲染桌面书签
+  renderDesktopBookmarks();
 
   // 天气卡片事件绑定
   const weatherElement = document.getElementById('weather');
@@ -2036,7 +2558,12 @@ function initSoundPanel() {
   
   // 点击外部关闭面板
   document.addEventListener('click', (e) => {
-    if (soundPanel && !soundPanel.contains(e.target) && !soundBtn.contains(e.target)) {
+    const panelSoundBtn = $('#panelSoundBtn');
+    const isClickInsidePanel = soundPanel && soundPanel.contains(e.target);
+    const isClickOnSoundBtn = soundBtn && soundBtn.contains(e.target);
+    const isClickOnPanelBtn = panelSoundBtn && panelSoundBtn.contains(e.target);
+    
+    if (!isClickInsidePanel && !isClickOnSoundBtn && !isClickOnPanelBtn) {
       soundPanel.classList.add('hidden');
     }
   });
