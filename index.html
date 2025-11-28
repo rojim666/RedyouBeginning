@@ -118,7 +118,7 @@
       <div class="search-container">
         <form id="searchForm" class="search" autocomplete="off">
           <select id="engineSelect" aria-label="搜索引擎">
-            <option value="https://www.google.com/search?q=">Google</option>
+            <option value="https://www.google.com/search?q=" selected>Google</option>
             <option value="https://www.bing.com/search?q=">Bing</option>
             <option value="https://www.baidu.com/s?wd=">百度</option>
             <option value="https://duckduckgo.com/?q=">DuckDuckGo</option>
@@ -152,6 +152,7 @@
       <div class="edit-tabs" id="editTabs">
         <button type="button" class="tab-btn active" data-tab="links">快速链接</button>
         <button type="button" class="tab-btn" data-tab="bookmarks">收藏夹</button>
+        <button type="button" class="tab-btn" data-tab="engines">搜索引擎</button>
       </div>
       
       <div class="dialog-content">
@@ -163,6 +164,11 @@
         <!-- 收藏夹编辑器 -->
         <div class="edit-panel" id="bookmarksEditPanel">
           <div id="bookmarksEditor"></div>
+        </div>
+        
+        <!-- 搜索引擎编辑器 -->
+        <div class="edit-panel" id="enginesPanel">
+          <div id="enginesEditor"></div>
         </div>
       </div>
       
@@ -206,12 +212,12 @@
           <div class="custom-upload">
             <div class="upload-area" id="uploadArea">
               <div class="upload-icon">📁</div>
-              <p>拖拽图片到这里或点击上传</p>
-              <small>支持 JPG、PNG、GIF 格式，大图片会自动压缩</small>
-              <input id="bgFileInput" type="file" accept="image/*" hidden>
+              <p>拖拽图片或视频到这里或点击上传</p>
+              <small>支持 JPG、PNG、GIF、MP4、WebM 格式，大图片会自动压缩</small>
+              <input id="bgFileInput" type="file" accept="image/*,video/*" hidden>
             </div>
             <div class="url-input">
-              <label>或输入图片URL</label>
+              <label>或输入图片/视频URL</label>
               <input id="bgUrlInput" placeholder="https://..." type="url">
               <button id="applyUrlBtn" type="button" class="btn">应用URL背景</button>
             </div>
@@ -291,24 +297,51 @@
   <!-- 音效控制面板 -->
   <div id="soundPanel" class="sound-panel hidden">
     <div class="sound-header">
-      <h3>环境音效</h3>
+      <h3>音效设置</h3>
       <button id="closeSoundBtn" class="icon-btn" title="关闭">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
       </button>
     </div>
-    
-    <div class="sound-list" id="soundList">
-      <!-- 音效选项将通过JS填充 -->
+
+    <div class="sound-tabs">
+      <button class="tab-btn active" data-tab="ambient">环境音效</button>
+      <button class="tab-btn" data-tab="music">网易云音乐</button>
     </div>
     
-    <div class="volume-control">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M11 5L6 9H2V15H6L11 19V5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <input type="range" id="volumeSlider" min="0" max="100" value="50" step="1">
-      <span id="volumeValue">50%</span>
+    <div id="ambientPanel" class="sound-content active">
+      <div class="sound-list" id="soundList">
+        <!-- 音效选项将通过JS填充 -->
+      </div>
+      
+      <div class="volume-control">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M11 5L6 9H2V15H6L11 19V5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <input type="range" id="volumeSlider" min="0" max="100" value="50" step="1">
+        <span id="volumeValue">50%</span>
+      </div>
+    </div>
+
+    <div id="musicPanel" class="sound-content hidden">
+      <div class="music-input-group">
+        <input type="text" id="musicIdInput" placeholder="输入网易云歌单ID或链接" title="输入网易云歌单ID或链接">
+        <button id="loadMusicBtn" class="btn secondary small">加载</button>
+        <button id="musicHelpBtn" class="icon-btn" title="如何获取ID?" style="width:32px;height:32px;margin-left:4px;border:1px solid var(--control-border);border-radius:6px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="12" y1="17" x2="12" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="music-player-container" id="musicPlayerContainer">
+        <div class="music-placeholder">
+          <p>请输入歌单ID并加载</p>
+          <small>提示: 网页版歌单URL中的 id 参数</small>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -642,7 +675,7 @@
         <path d="M11 5L6 9H2V15H6L11 19V5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M15.54 8.46C16.48 9.4 17 10.67 17 12s-.52 2.6-1.46 3.54" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <span>环境音效</span>
+      <span>音乐</span>
     </button>
     <button id="panelFocusBtn" class="settings-panel-item">
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -664,6 +697,41 @@
       </svg>
       <span>收藏夹</span>
     </button>
+  </div>
+
+  <!-- 悬浮音乐播放器 -->
+  <div id="floatingPlayer" class="floating-player hidden">
+    <div class="fp-cover"></div>
+    <div class="fp-info">
+      <div class="fp-title" id="fpTitle">未播放</div>
+      <div class="fp-artist" id="fpArtist">-</div>
+    </div>
+    <div class="fp-controls">
+      <button id="fpPrevBtn" class="icon-btn" title="上一首">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19 20L9 12l10-8v16zM5 19V5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button id="fpPlayBtn" class="icon-btn play-btn" title="播放/暂停">
+        <svg id="fpPlayIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+        <svg id="fpPauseIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" class="hidden">
+          <rect x="6" y="4" width="4" height="16" rx="1"/>
+          <rect x="14" y="4" width="4" height="16" rx="1"/>
+        </svg>
+      </button>
+      <button id="fpNextBtn" class="icon-btn" title="下一首">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 4l10 8-10 8V4zM19 5v14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button id="fpListBtn" class="icon-btn" title="打开列表">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
   </div>
 
   <script src="script.js"></script>

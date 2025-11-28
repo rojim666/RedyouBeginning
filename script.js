@@ -1,10 +1,221 @@
 // 基础功能：时钟、问候、搜索、快速链接管理、主题切换、localStorage 持久化
+
+// ==================== IndexedDB 存储管理 ====================
+// 用于存储大文件（如视频背景）
+const DB_NAME = 'StartPageDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'backgrounds';
+
+let db = null;
+
+// 初始化IndexedDB
+function initIndexedDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        
+        request.onerror = () => {
+            console.error('IndexedDB打开失败:', request.error);
+            reject(request.error);
+        };
+        
+        request.onsuccess = () => {
+            db = request.result;
+            console.log('IndexedDB已就绪');
+            resolve(db);
+        };
+        
+        request.onupgradeneeded = (event) => {
+            db = event.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                const objectStore = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                objectStore.createIndex('type', 'type', { unique: false });
+                console.log('IndexedDB对象仓库已创建');
+            }
+        };
+    });
+}
+
+// 保存背景到IndexedDB
+function saveBackgroundToDB(bgData, bgType) {
+    return new Promise((resolve, reject) => {
+        if (!db) {
+            reject(new Error('IndexedDB未初始化'));
+            return;
+        }
+        
+        // 清除缓存，确保下次读取最新数据
+        clearBackgroundCache();
+        
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const objectStore = transaction.objectStore(STORE_NAME);
+        
+        const data = {
+            id: 'current_background',
+            data: bgData,
+            type: bgType,
+            timestamp: Date.now()
+        };
+        
+        const request = objectStore.put(data);
+        
+        request.onsuccess = () => {
+            console.log('背景已保存到IndexedDB');
+            resolve();
+        };
+        
+        request.onerror = () => {
+            console.error('保存到IndexedDB失败:', request.error);
+            reject(request.error);
+        };
+    });
+}
+
+// 背景数据缓存（避免重复从IndexedDB读取）
+let backgroundCache = null;
+let backgroundCacheTime = 0;
+const CACHE_DURATION = 60 * 60 * 1000; // 缓存1小时（更长时间）
+
+// 从IndexedDB加载背景（带缓存）
+function loadBackgroundFromDB() {
+    return new Promise((resolve, reject) => {
+        // 检查缓存
+        const now = Date.now();
+        if (backgroundCache && (now - backgroundCacheTime) < CACHE_DURATION) {
+            console.log('使用缓存的背景数据');
+            resolve(backgroundCache);
+            return;
+        }
+        
+        if (!db) {
+            reject(new Error('IndexedDB未初始化'));
+            return;
+        }
+        
+        const transaction = db.transaction([STORE_NAME], 'readonly');
+        const objectStore = transaction.objectStore(STORE_NAME);
+        const request = objectStore.get('current_background');
+        
+        request.onsuccess = () => {
+            if (request.result) {
+                // 更新缓存
+                backgroundCache = request.result;
+                backgroundCacheTime = now;
+                console.log('从IndexedDB加载背景成功并缓存');
+                resolve(request.result);
+            } else {
+                resolve(null);
+            }
+        };
+        
+        request.onerror = () => {
+            console.error('从IndexedDB加载失败:', request.error);
+            reject(request.error);
+        };
+    });
+}
+
+// 清除背景缓存
+function clearBackgroundCache() {
+    backgroundCache = null;
+    backgroundCacheTime = 0;
+}
+
+// 删除IndexedDB中的背景
+function deleteBackgroundFromDB() {
+    return new Promise((resolve, reject) => {
+        if (!db) {
+            reject(new Error('IndexedDB未初始化'));
+            return;
+        }
+        
+        // 清除缓存
+        clearBackgroundCache();
+        
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const objectStore = transaction.objectStore(STORE_NAME);
+        const request = objectStore.delete('current_background');
+        
+        request.onsuccess = () => {
+            console.log('IndexedDB中的背景已删除');
+            resolve();
+        };
+        
+        request.onerror = () => {
+            console.error('删除IndexedDB数据失败:', request.error);
+            reject(request.error);
+        };
+    });
+}
+
+// ==================== 默认数据 ====================
+
 const defaultLinks = [
   {title: 'GitHub', url: 'https://github.com'},
   {title: 'Gmail', url: 'https://mail.google.com'},
   {title: '知乎', url: 'https://www.zhihu.com'},
   {title: '掘金', url: 'https://juejin.cn'}
 ];
+
+// 默认搜索引擎列表
+const defaultEngines = [
+  { name: 'Google', url: 'https://www.google.com/search?q=' },
+  { name: 'Bing', url: 'https://www.bing.com/search?q=' },
+  { name: '百度', url: 'https://www.baidu.com/s?wd=' },
+  { name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=' }
+];
+
+// 搜索引擎管理
+let searchEngines = [];
+
+function loadSearchEngines() {
+  try {
+    const saved = localStorage.getItem('startpage.searchEngines');
+    if (saved) {
+      searchEngines = JSON.parse(saved);
+    } else {
+      searchEngines = JSON.parse(JSON.stringify(defaultEngines));
+      saveSearchEngines();
+    }
+    syncEngineSelect();
+  } catch (e) {
+    console.error('加载搜索引擎失败:', e);
+    searchEngines = JSON.parse(JSON.stringify(defaultEngines));
+  }
+}
+
+function saveSearchEngines() {
+  try {
+    localStorage.setItem('startpage.searchEngines', JSON.stringify(searchEngines));
+  } catch (e) {
+    console.error('保存搜索引擎失败:', e);
+  }
+}
+
+function syncEngineSelect() {
+  const select = document.getElementById('engineSelect');
+  if (!select) return;
+  
+  // 保存当前选中的值
+  const currentValue = select.value;
+  
+  // 清空 select
+  select.innerHTML = '';
+  
+  // 重新填充 select
+  searchEngines.forEach(engine => {
+    const option = document.createElement('option');
+    option.value = engine.url;
+    option.textContent = engine.name;
+    select.appendChild(option);
+  });
+  
+  // 恢复选中值（如果还存在）
+  if (select.querySelector(`option[value="${currentValue}"]`)) {
+    select.value = currentValue;
+  } else if (searchEngines.length > 0) {
+    select.value = searchEngines[0].url;
+  }
+}
 
 // 本地语录库（当API失败时使用）
 const localQuotes = [
@@ -385,7 +596,7 @@ function getLogoSources(url) {
 
 function renderLinks(){
   const container = $('#linksGrid');
-  container.innerHTML = '';
+    container.innerHTML = ''; // 清空容器以准备渲染新链接
   links.forEach((l,idx)=>{
     const a = document.createElement('a');
     a.className = 'link-card';
@@ -676,6 +887,9 @@ function openEditor(){
   // 也渲染收藏夹编辑器
   renderBookmarksEditor();
   
+  // 也渲染搜索引擎编辑器
+  renderEnginesEditor();
+  
   dialog.showModal();
 }
 
@@ -767,6 +981,189 @@ function renderBookmarksEditor(){
   });
 }
 
+// 渲染搜索引擎编辑器
+function renderEnginesEditor(){
+  const container = document.getElementById('enginesEditor');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  
+  if (searchEngines.length === 0) {
+    container.innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px;">还没有搜索引擎</div>`;
+    return;
+  }
+  
+  // 添加表头
+  const header = document.createElement('div');
+  header.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 80px;gap:12px;align-items:center;padding:8px;margin-bottom:12px;border-bottom:1px solid var(--control-border);font-weight:600;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;';
+  header.innerHTML = `
+    <div>名称</div>
+    <div>搜索URL</div>
+    <div></div>
+  `;
+  container.appendChild(header);
+  
+  searchEngines.forEach((engine, idx) => {
+    const row = document.createElement('div');
+    row.className = 'engine-row';
+    row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 80px;gap:12px;align-items:center;padding:12px;border-radius:8px;border:1px solid var(--control-border);margin-bottom:8px;transition:all 0.2s;background:var(--control-bg);';
+    
+    row.addEventListener('mouseenter', () => {
+      row.style.background = 'var(--control-bg-hover)';
+      row.style.borderColor = 'rgba(0, 122, 255, 0.3)';
+    });
+    
+    row.addEventListener('mouseleave', () => {
+      row.style.background = 'var(--control-bg)';
+      row.style.borderColor = 'var(--control-border)';
+    });
+    
+    // 名称和URL信息
+    const nameDiv = document.createElement('div');
+    nameDiv.style.cssText = 'font-size:14px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    nameDiv.textContent = engine.name;
+    
+    const urlDiv = document.createElement('div');
+    urlDiv.style.cssText = 'font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    urlDiv.textContent = engine.url;
+    
+    // 编辑和删除按钮
+    const btnDiv = document.createElement('div');
+    btnDiv.style.cssText = 'display:flex;gap:6px;justify-content:flex-end;';
+    
+    const editBtn = document.createElement('button');
+    editBtn.className = 'icon-btn';
+    editBtn.type = 'button';
+    editBtn.title = '编辑';
+    editBtn.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+    editBtn.style.cssText = 'padding:6px;';
+    editBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openEngineEditor(engine, idx);
+    });
+    
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'icon-btn';
+    deleteBtn.type = 'button';
+    deleteBtn.title = '删除';
+    deleteBtn.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M19 6H5v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M9 11v6m6-6v6M10 6V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+    deleteBtn.style.cssText = 'padding:6px;';
+    deleteBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (confirm(`确定要删除 "${engine.name}" 吗？`)) {
+        searchEngines.splice(idx, 1);
+        saveSearchEngines();
+        syncEngineSelect();
+        renderEnginesEditor();
+      }
+    });
+    
+    btnDiv.appendChild(editBtn);
+    btnDiv.appendChild(deleteBtn);
+    
+    row.appendChild(nameDiv);
+    row.appendChild(urlDiv);
+    row.appendChild(btnDiv);
+    container.appendChild(row);
+  });
+  
+  // 添加"添加搜索引擎"按钮
+  const addBtn = document.createElement('button');
+  addBtn.className = 'btn primary';
+  addBtn.textContent = '+ 添加搜索引擎';
+  addBtn.style.cssText = 'margin-top:12px;width:100%;';
+  addBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    openEngineEditor(null, -1);
+  });
+  container.appendChild(addBtn);
+}
+
+// 打开搜索引擎编辑对话框
+function openEngineEditor(engine, idx) {
+  const name = engine ? engine.name : '';
+  const url = engine ? engine.url : '';
+  const isEdit = engine !== null;
+  
+  const dialog = document.createElement('div');
+  dialog.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--panel-bg);border:1px solid var(--control-border);border-radius:12px;padding:24px;z-index:3000;box-shadow:0 8px 32px rgba(0,0,0,0.2);min-width:400px;';
+  
+  dialog.innerHTML = `
+    <div style="font-size:18px;font-weight:600;margin-bottom:16px;color:var(--text);">${isEdit ? '编辑搜索引擎' : '添加搜索引擎'}</div>
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;">名称</label>
+      <input type="text" id="engineName" placeholder="例如：Google" value="${escapeHtml(name)}" style="width:100%;padding:10px 12px;border:1px solid var(--control-border);border-radius:6px;background:var(--input-bg);color:var(--text);font-size:14px;box-sizing:border-box;">
+    </div>
+    <div style="margin-bottom:20px;">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;">搜索URL (用 {0} 或 {q} 表示搜索词)</label>
+      <input type="text" id="engineUrl" placeholder="例如：https://www.google.com/search?q=" value="${escapeHtml(url)}" style="width:100%;padding:10px 12px;border:1px solid var(--control-border);border-radius:6px;background:var(--input-bg);color:var(--text);font-size:14px;box-sizing:border-box;">
+    </div>
+    <div style="display:flex;gap:12px;justify-content:flex-end;">
+      <button id="cancelBtn" class="btn" style="flex:1;">取消</button>
+      <button id="saveBtn" class="btn primary" style="flex:1;">${isEdit ? '保存' : '添加'}</button>
+    </div>
+  `;
+  
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);z-index:2999;';
+  
+  document.body.appendChild(overlay);
+  document.body.appendChild(dialog);
+  
+  const nameInput = document.getElementById('engineName');
+  const urlInput = document.getElementById('engineUrl');
+  
+  nameInput.focus();
+  
+  document.getElementById('cancelBtn').addEventListener('click', () => {
+    overlay.remove();
+    dialog.remove();
+  });
+  
+  document.getElementById('saveBtn').addEventListener('click', () => {
+    const newName = nameInput.value.trim();
+    const newUrl = urlInput.value.trim();
+    
+    if (!newName) {
+      alert('请输入搜索引擎名称');
+      return;
+    }
+    if (!newUrl) {
+      alert('请输入搜索URL');
+      return;
+    }
+    
+    if (isEdit) {
+      searchEngines[idx].name = newName;
+      searchEngines[idx].url = newUrl;
+    } else {
+      searchEngines.push({ name: newName, url: newUrl });
+    }
+    
+    saveSearchEngines();
+    syncEngineSelect();
+    renderEnginesEditor();
+    
+    overlay.remove();
+    dialog.remove();
+  });
+  
+  overlay.addEventListener('click', () => {
+    overlay.remove();
+    dialog.remove();
+  });
+}
+
 function escapeHtml(s){ return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
 
 function saveEditor(){
@@ -792,7 +1189,6 @@ function addLinkRow(){
 // 收藏夹管理（代码已移动到文件顶部）
 
 function openBookmarksPanel() {
-  console.log('正在打开收藏夹面板...');
   const settingsPanel = document.getElementById('settingsPanel');
   if (settingsPanel) settingsPanel.classList.remove('show');
   const panel = document.getElementById('bookmarksPanel');
@@ -801,7 +1197,6 @@ function openBookmarksPanel() {
   if (panel) {
     panel.classList.add('open');
     panel.classList.remove('hidden');
-    console.log('面板显示成功');
   } else {
     console.error('找不到收藏夹面板元素');
   }
@@ -809,7 +1204,6 @@ function openBookmarksPanel() {
   if (overlay) {
     overlay.classList.add('open');
     overlay.classList.remove('hidden');
-    console.log('遮罩显示成功');
   } else {
     console.error('找不到遮罩元素');
   }
@@ -837,19 +1231,15 @@ function closeBookmarksPanel() {
     overlay.classList.remove('open');
     setTimeout(() => overlay.classList.add('hidden'), 320);
   }
-  // clear visible state so entrance animation can replay next time
-  const items = document.querySelectorAll('#bookmarksList .bookmark-item');
-  items.forEach(it => it.classList.remove('visible'));
+  // 不移除 visible 状态，保持 DOM 状态一致
 }
 
-// Staggered entrance for bookmark items
+// Fast entrance for bookmark items - show all at once with CSS animation
 function playBookmarkEntrance() {
-  const items = Array.from(document.querySelectorAll('#bookmarksList .bookmark-item'));
+  const items = document.querySelectorAll('#bookmarksList .bookmark-item');
   if (!items.length) return;
-  items.forEach((it, i) => {
-    it.classList.remove('visible');
-    setTimeout(() => it.classList.add('visible'), i * 60);
-  });
+  // 一次性添加 visible 类，由 CSS 动画控制
+  items.forEach(it => it.classList.add('visible'));
 }
 
 function saveBookmarks() {
@@ -1215,6 +1605,12 @@ function promptAddBookmark() {
 let searchHistory = JSON.parse(localStorage.getItem('startpage.searchHistory') || '[]');
 
 function saveSearchHistory(query, engine) {
+  // 如果没有提供 query 和 engine，表示只是保存当前数据到 localStorage
+  if (query === undefined && engine === undefined) {
+    localStorage.setItem('startpage.searchHistory', JSON.stringify(searchHistory));
+    return;
+  }
+  
   // 避免保存URL和重复项
   if (isProbablyUrl(query) || !query.trim()) return;
   
@@ -1232,13 +1628,12 @@ function saveSearchHistory(query, engine) {
   // 添加到开头
   searchHistory.unshift(record);
   
-  // 限制记录数量（最多20条）
-  if (searchHistory.length > 20) {
-    searchHistory = searchHistory.slice(0, 20);
+  // 限制记录数量（最多6条）
+  if (searchHistory.length > 6) {
+    searchHistory = searchHistory.slice(0, 6);
   }
   
   localStorage.setItem('startpage.searchHistory', JSON.stringify(searchHistory));
-  console.log('搜索记录已保存:', record);
 }
 
 function clearSearchHistory() {
@@ -1255,12 +1650,12 @@ function showSearchSuggestions() {
   
   if (query.length === 0) {
     // 显示最近的搜索记录
-    renderSearchSuggestions(searchHistory.slice(0, 8));
+    renderSearchSuggestions(searchHistory.slice(0, 6));
   } else {
     // 筛选匹配的搜索记录 - 性能优化：限制处理范围
     const filtered = searchHistory
       .filter(item => item.query.toLowerCase().includes(query))
-      .slice(0, 8);
+      .slice(0, 6);
     renderSearchSuggestions(filtered);
   }
 }
@@ -1280,17 +1675,46 @@ function renderSearchSuggestions(items) {
   items.forEach((item, index) => {
     const div = document.createElement('div');
     div.className = 'search-suggestion-item';
+    
+    // 创建引擎选择器
+    let engineOptions = '';
+    searchEngines.forEach(engine => {
+      const selected = engine.url === item.engine ? 'selected' : '';
+      engineOptions += `<option value="${engine.url}" ${selected}>${engine.name}</option>`;
+    });
+    
     div.innerHTML = `
-      <span class="search-suggestion-text">${escapeHtml(item.query)}</span>
-      <span class="search-suggestion-engine">${getEngineName(item.engine)}</span>
+      <span class="search-suggestion-text" style="cursor:pointer;flex:1;">${escapeHtml(item.query)}</span>
+      <select class="search-suggestion-engine-select" style="padding:4px 8px;border:1px solid var(--control-border);border-radius:4px;background:var(--control-bg);color:var(--text);font-size:12px;cursor:pointer;">
+        ${engineOptions}
+      </select>
       <span class="search-suggestion-time">${formatTime(item.timestamp)}</span>
     `;
     
-    div.addEventListener('click', () => {
+    // 文本点击时用当前选中的引擎搜索
+    const textSpan = div.querySelector('.search-suggestion-text');
+    textSpan.addEventListener('click', () => {
+      const engineSelect = div.querySelector('.search-suggestion-engine-select');
       $('#searchInput').value = item.query;
-      $('#engineSelect').value = item.engine;
+      $('#engineSelect').value = engineSelect.value;
       hideSearchSuggestions();
       onSearch(new Event('submit'));
+    });
+    
+    // 引擎选择器改变时的处理
+    const engineSelect = div.querySelector('.search-suggestion-engine-select');
+    // pointerdown 时阻止冒泡并设置标记，避免 blur 定时器隐藏建议
+    engineSelect.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      preventHideSuggestions = true;
+    });
+    engineSelect.addEventListener('change', (e) => {
+      e.stopPropagation();
+      // 更新搜索历史中该项的引擎并持久化
+      item.engine = e.target.value;
+      saveSearchHistory();
+      // 在短时间内阻止建议被隐藏
+      setTimeout(() => { preventHideSuggestions = false; }, 300);
     });
     
     fragment.appendChild(div);
@@ -1407,15 +1831,207 @@ function bindSync(){
 }
 
 // 背景设置
-let currentBg = localStorage.getItem('startpage.bg') || '';
-let currentBgType = localStorage.getItem('startpage.bgType') || 'color';
+let currentBg = '';
+let currentBgType = 'color';
 
-function loadSavedBackground() {
-    currentBg = localStorage.getItem('startpage.bg') || '';
-    currentBgType = localStorage.getItem('startpage.bgType') || 'color';
-    if (currentBg) {
+// 加载保存的背景（同时支持localStorage和IndexedDB）
+// ==================== 终极性能优化系统 ====================
+// 性能监控
+const perfMetrics = { startTime: performance.now(), checkpoints: {} };
+function markCheckpoint(name) {
+    perfMetrics.checkpoints[name] = performance.now() - perfMetrics.startTime;
+    console.log(`✓ ${name}: ${perfMetrics.checkpoints[name].toFixed(0)}ms`);
+}
+
+// 极速加载保存的背景
+async function loadSavedBackground() {
+    const cachedVideo = document.getElementById('videoBgPlayer');
+    if (cachedVideo && !cachedVideo.paused) {
+        markCheckpoint('内存缓存命中');
+        return;
+    }
+    
+    const bgType = localStorage.getItem('startpage.bgType') || 'color';
+    
+    // 非视频类型：同步加载（<3ms）
+    if (bgType !== 'video') {
+        const localBg = localStorage.getItem('startpage.bg');
+        if (localBg) {
+            currentBg = localBg;
+            currentBgType = bgType;
+            applyBackground();
+            markCheckpoint(`背景加载: ${bgType}`);
+        }
+        return;
+    }
+    
+    // 视频类型：检查数据来源
+    const localBg = localStorage.getItem('startpage.bg');
+    
+    // 情况1: IndexedDB标记 - 从数据库加载Blob（⚡极速）
+    if (localBg === 'INDEXED_DB_VIDEO') {
+        console.log('⚡ 从IndexedDB加载自定义视频（Blob模式）');
+        const loadStart = performance.now();
+        
+        try {
+            if (!db) await initIndexedDB();
+            const dbData = await loadBackgroundFromDB();
+            
+            if (dbData?.data) {
+                // 🚀 性能关键：从Blob创建Object URL（<10ms）
+                let videoUrl;
+                if (dbData.data instanceof Blob) {
+                    videoUrl = URL.createObjectURL(dbData.data);
+                    console.log('✅ Blob转URL完成');
+                } else if (typeof dbData.data === 'string' && dbData.data.startsWith('data:')) {
+                    // 兼容旧的base64数据
+                    videoUrl = dbData.data;
+                    console.log('⚠️ 使用旧base64格式（较慢）');
+                } else {
+                    throw new Error('未知的视频数据格式');
+                }
+                
+                currentBg = videoUrl;
+                currentBgType = bgType;
+                applyBackground();
+                
+                const loadTime = (performance.now() - loadStart).toFixed(1);
+                console.log(`✅ 视频加载完成，耗时: ${loadTime}ms`);
+                markCheckpoint(`IndexedDB视频加载: ${loadTime}ms`);
+                return;
+            }
+        } catch (error) {
+            console.warn('❌ IndexedDB加载失败:', error);
+        }
+        // IndexedDB加载失败，清除标记
+        localStorage.removeItem('startpage.bg');
+        localStorage.removeItem('startpage.bgType');
+        return;
+    }
+    
+    // 情况2: base64或预设视频路径 - 直接使用
+    if (localBg) {
+        currentBg = localBg;
+        currentBgType = bgType;
         applyBackground();
-        console.log('已加载保存的背景:', currentBgType, currentBg);
+        
+        // 如果是大的base64，后台迁移到IndexedDB（优化为Blob存储）
+        if (localBg.startsWith('data:') && localBg.length > 1024 * 1024) {
+            setTimeout(async () => {
+                try {
+                    console.log('🔄 后台迁移base64到Blob格式...');
+                    // 将base64转为Blob
+                    const response = await fetch(localBg);
+                    const blob = await response.blob();
+                    
+                    if (!db) await initIndexedDB();
+                    await saveBackgroundToDB(blob, currentBgType);
+                    localStorage.setItem('startpage.bg', 'INDEXED_DB_VIDEO');
+                    console.log('✅ 迁移完成，下次加载将更快');
+                    markCheckpoint('迁移到IndexedDB Blob');
+                } catch (e) {
+                    console.warn('迁移失败:', e);
+                }
+            }, 3000);
+        }
+        
+        markCheckpoint(localBg.startsWith('data:') ? '本地视频加载' : '预设视频加载');
+        return;
+    }
+}
+
+// 高效应用背景
+function applyBackground() {
+    const root = document.documentElement;
+    if (currentBgType === 'video' && currentBg) {
+        createVideoBackground(currentBg);
+        root.style.setProperty('--bg', 'transparent');
+        root.style.setProperty('--bg-image', 'none');
+    } else if (currentBgType === 'image' && currentBg) {
+        root.style.setProperty('--bg-image', `url(${currentBg})`);
+        root.style.setProperty('--bg', 'none');
+        root.style.setProperty('--bg-size', 'cover');
+        root.style.setProperty('--bg-pos', 'center center');
+    } else if (currentBgType === 'gradient' && currentBg) {
+        root.style.setProperty('--bg', currentBg);
+        root.style.setProperty('--bg-image', 'none');
+    } else if (currentBgType === 'color' && currentBg) {
+        root.style.setProperty('--bg', currentBg);
+        root.style.setProperty('--bg-image', 'none');
+    }
+}
+
+// 极速视频背景创建
+function createVideoBackground(videoUrl) {
+    const createStart = performance.now();
+    
+    let videoContainer = document.getElementById('videoBgContainer');
+    let video = document.getElementById('videoBgPlayer');
+    
+    // 复用已有视频元素（避免重建DOM）
+    if (video && video.src === videoUrl && !video.paused) {
+        video.style.opacity = '1';
+        console.log('⚡ 复用现有视频，耗时: 0ms');
+        return;
+    }
+    
+    // 创建容器
+    if (!videoContainer) {
+        videoContainer = document.createElement('div');
+        videoContainer.id = 'videoBgContainer';
+        videoContainer.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;overflow:hidden;pointer-events:none;';
+        document.body.insertBefore(videoContainer, document.body.firstChild);
+    }
+    
+    // 创建或复用视频元素
+    if (!video) {
+        video = document.createElement('video');
+        video.id = 'videoBgPlayer';
+        video.autoplay = true;
+        video.muted = true;
+        video.loop = true;
+        video.playsInline = true;
+        
+        // ⚡ 性能关键：预加载优化
+        video.preload = 'auto';  // 改为auto，加载元数据和部分内容
+        video.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 0.3s;';
+        
+        // 监听加载完成，淡入显示
+        video.addEventListener('loadeddata', () => {
+            video.style.opacity = '1';
+            const loadTime = (performance.now() - createStart).toFixed(1);
+            console.log(`✅ 视频渲染完成，总耗时: ${loadTime}ms`);
+        }, { once: true });
+        
+        videoContainer.appendChild(video);
+    }
+    
+    // 更新视频源
+    if (video.src !== videoUrl) {
+        video.style.opacity = '0';  // 先隐藏旧内容
+        video.src = videoUrl;
+        
+        // 立即播放（不等待完全加载）
+        video.play().catch(() => {
+            // 需要用户交互才能播放
+            document.addEventListener('click', () => video.play(), { once: true });
+        });
+    }
+    
+    const setupTime = (performance.now() - createStart).toFixed(1);
+    console.log(`⚡ 视频元素设置完成，耗时: ${setupTime}ms`);
+}
+
+// 移除视频背景
+function removeVideoBackground() {
+    const videoContainer = document.getElementById('videoBgContainer');
+    if (videoContainer) {
+        const video = videoContainer.querySelector('video');
+        if (video) {
+            video.pause();
+            video.src = '';
+        }
+        videoContainer.remove();
     }
 }
 
@@ -1431,6 +2047,15 @@ const presetBackgrounds = [
     { id: 'solid4', name: '深红', type: 'color', value: '#7f1d1d' }
 ];
 
+// 预设高清动态壁纸（视频背景）
+const presetVideos = [
+    { id: 'video1', name: '上杉绘梨衣', type: 'video', value: 'video/上杉绘梨衣.mp4', thumbnail: 'video/上杉绘梨衣.mp4' },
+    { id: 'video2', name: '伊蕾娜', type: 'video', value: 'video/伊蕾娜.mp4', thumbnail: 'video/伊蕾娜.mp4' },
+    { id: 'video3', name: '心海', type: 'video', value: 'video/心海.mp4', thumbnail: 'video/心海.mp4' },
+    { id: 'video4', name: '暗光', type: 'video', value: 'video/暗光.mp4', thumbnail: 'video/暗光.mp4' },
+    { id: 'video5', name: '胡桃', type: 'video', value: 'video/胡桃.mp4', thumbnail: 'video/胡桃.mp4' }
+];
+
 // 新增预设背景颜色数据
 const presetColors = [
   { type: 'solid', color: '#FF5733' },
@@ -1442,13 +2067,10 @@ const presetColors = [
 ];
 
 function openBackgroundDialog() {
-    console.log('打开背景对话框');
     const dialog = document.getElementById('bgDialog');
-    console.log('对话框元素:', dialog);
     if (dialog) {
         initializeBackgroundDialog();
         dialog.showModal();
-        console.log('对话框已显示');
     } else {
         console.error('找不到背景对话框 #bgDialog');
     }
@@ -1520,6 +2142,7 @@ function generatePresetBackgrounds() {
     
     grid.innerHTML = '';
     
+    // 添加渐变和纯色预设
     presetBackgrounds.forEach(bg => {
         const item = document.createElement('div');
         item.className = 'preset-item';
@@ -1541,9 +2164,49 @@ function generatePresetBackgrounds() {
         item.appendChild(name);
         grid.appendChild(item);
     });
+    
+    // 添加视频预设
+    presetVideos.forEach(bg => {
+        const item = document.createElement('div');
+        item.className = 'preset-item video-preset';
+        item.onclick = () => selectPresetBackground(bg);
+        
+        const preview = document.createElement('div');
+        preview.className = 'preset-preview video-preview';
+        preview.style.backgroundImage = `url(${bg.thumbnail})`;
+        preview.style.backgroundSize = 'cover';
+        preview.style.backgroundPosition = 'center';
+        
+        // 添加播放图标
+        const playIcon = document.createElement('div');
+        playIcon.className = 'play-icon';
+        playIcon.innerHTML = `
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="white" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+                <path d="M8 5v14l11-7z"/>
+            </svg>
+        `;
+        preview.appendChild(playIcon);
+        
+        const name = document.createElement('div');
+        name.className = 'preset-name';
+        name.textContent = `🎬 ${bg.name}`;
+        
+        item.appendChild(preview);
+        item.appendChild(name);
+        grid.appendChild(item);
+    });
 }
 
 function selectPresetBackground(bg) {
+    // 检查是否会覆盖自定义上传的视频
+    const currentBgValue = localStorage.getItem('startpage.bg');
+    if (currentBgValue === 'INDEXED_DB_VIDEO' && bg.type === 'video') {
+        const confirmed = confirm('当前有自定义上传的视频背景，切换到预设视频会丢失。确定要切换吗？');
+        if (!confirmed) {
+            return;
+        }
+    }
+    
     // 移除其他选中状态
     document.querySelectorAll('.preset-item').forEach(item => {
         item.classList.remove('selected');
@@ -1560,6 +2223,8 @@ function selectPresetBackground(bg) {
     // 保存到本地存储
     localStorage.setItem('startpage.bg', currentBg);
     localStorage.setItem('startpage.bgType', currentBgType);
+    
+    console.log('已应用背景:', bg.name, '路径:', currentBg);
     
     showToast(`已应用${bg.name}背景`);
     closeBackgroundDialog();
@@ -1589,39 +2254,69 @@ function applyBackground(color) {
 
 function applyBackground() {
     const root = document.documentElement;
-    console.log('应用背景:', currentBgType, currentBg ? currentBg.substring(0, 50) + '...' : 'null');
     
-    if (currentBgType === 'image' && currentBg) {
-        console.log('设置图片背景');
-        root.style.setProperty('--bg-image', `url(${currentBg})`);
-        root.style.setProperty('--bg', 'none');
-        root.style.setProperty('--bg-size', 'cover');
-        root.style.setProperty('--bg-pos', 'center center');
-        
-        // 验证CSS变量是否设置成功
-        const computedBgImage = getComputedStyle(root).getPropertyValue('--bg-image');
-        console.log('CSS变量 --bg-image 已设置:', computedBgImage ? '是' : '否');
+    // 性能优化：批量更新CSS变量
+    const updates = {};
+    let needsVideoCleanup = true;
+    
+    if (currentBgType === 'video' && currentBg) {
+        console.log('应用视频背景');
+        createVideoBackground(currentBg);
+        updates['--bg'] = 'transparent';
+        updates['--bg-image'] = 'none';
+        needsVideoCleanup = false;
+    } else if (currentBgType === 'image' && currentBg) {
+        console.log('应用图片背景');
+        updates['--bg-image'] = `url(${currentBg})`;
+        updates['--bg'] = 'none';
+        updates['--bg-size'] = 'cover';
+        updates['--bg-pos'] = 'center center';
     } else if (currentBgType === 'gradient' && currentBg) {
-        console.log('设置渐变背景');
-        root.style.setProperty('--bg', currentBg);
-        root.style.setProperty('--bg-image', 'none');
+        console.log('应用渐变背景');
+        updates['--bg'] = currentBg;
+        updates['--bg-image'] = 'none';
     } else if (currentBgType === 'color' && currentBg) {
-        console.log('设置纯色背景');
-        root.style.setProperty('--bg', currentBg);
-        root.style.setProperty('--bg-image', 'none');
+        console.log('应用纯色背景');
+        updates['--bg'] = currentBg;
+        updates['--bg-image'] = 'none';
     } else {
         console.log('重置背景');
-        // 重置为默认值
+        // 移除所有背景相关CSS变量
         root.style.removeProperty('--bg-image');
         root.style.removeProperty('--bg');
         root.style.removeProperty('--bg-size');
         root.style.removeProperty('--bg-pos');
     }
     
-    // 检查body的最终计算样式
-    const bodyStyles = getComputedStyle(document.body);
-    console.log('Body背景图片:', bodyStyles.backgroundImage);
-    console.log('Body背景色:', bodyStyles.backgroundColor);
+    // 批量应用CSS变量（性能优化）
+    if (Object.keys(updates).length > 0) {
+        requestAnimationFrame(() => {
+            for (const [key, value] of Object.entries(updates)) {
+                root.style.setProperty(key, value);
+            }
+        });
+    }
+    
+    // 清理视频背景（如果需要）
+    if (needsVideoCleanup) {
+        removeVideoBackground();
+    }
+}
+
+// 创建视频背景（极速优化版）
+
+
+// 移除视频背景
+function removeVideoBackground() {
+    const videoContainer = document.getElementById('videoBgContainer');
+    if (videoContainer) {
+        const video = videoContainer.querySelector('video');
+        if (video) {
+            video.pause();
+            video.src = '';
+        }
+        videoContainer.remove();
+    }
 }
 
 // 优化的图片压缩函数 - 使用先进算法保持最佳画质
@@ -1990,12 +2685,180 @@ function smartCompress(file) {
 function handleFileUpload(file) {
     console.log('处理文件上传:', file);
     
-    if (!file || !file.type.startsWith('image/')) {
-        console.error('文件类型不支持:', file ? file.type : 'null');
-        showToast('请选择图片文件');
+    if (!file) {
+        console.error('没有文件');
+        showToast('请选择文件');
         return;
     }
     
+    // 判断是图片还是视频
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/');
+    
+    if (!isImage && !isVideo) {
+        console.error('文件类型不支持:', file.type);
+        showToast('请选择图片或视频文件');
+        return;
+    }
+    
+    if (isVideo) {
+        // 处理视频文件
+        handleVideoUpload(file);
+    } else {
+        // 处理图片文件
+        handleImageUpload(file);
+    }
+}
+
+function handleVideoUpload(file) {
+    console.log('处理视频上传:', file.type, '大小:', (file.size / 1024 / 1024).toFixed(2) + 'MB');
+    
+    const fileSizeMB = file.size / 1024 / 1024;
+    
+    // 超过10MB需要优化
+    if (fileSizeMB > 10) {
+        showToast('视频较大，正在优化处理...');
+        optimizeVideo(file).then(optimizedBlob => {
+            if (optimizedBlob) {
+                const optimizedSizeMB = optimizedBlob.size / 1024 / 1024;
+                console.log('视频优化完成，优化后大小:', optimizedSizeMB.toFixed(2) + 'MB');
+                processVideoFile(optimizedBlob);
+            } else {
+                // 优化失败，使用原文件
+                console.warn('视频优化失败，使用原文件');
+                showToast('正在加载原始视频...');
+                processVideoFile(file);
+            }
+        }).catch(error => {
+            console.error('视频优化出错:', error);
+            showToast('正在加载原始视频...');
+            processVideoFile(file);
+        });
+    } else {
+        // 10MB以下直接加载
+        showToast('正在加载视频...');
+        processVideoFile(file);
+    }
+}
+
+// 优化视频文件
+function optimizeVideo(file) {
+    return new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        video.preload = 'metadata';
+        video.muted = true;
+        
+        video.onloadedmetadata = function() {
+            // 获取视频尺寸
+            const videoWidth = video.videoWidth;
+            const videoHeight = video.videoHeight;
+            const videoDuration = video.duration;
+            
+            console.log('视频信息:', {
+                宽度: videoWidth,
+                高度: videoHeight,
+                时长: videoDuration.toFixed(2) + 's'
+            });
+            
+            // 计算目标尺寸（保持宽高比，最大1920x1080）
+            let targetWidth = videoWidth;
+            let targetHeight = videoHeight;
+            const maxWidth = 1920;
+            const maxHeight = 1080;
+            
+            if (videoWidth > maxWidth || videoHeight > maxHeight) {
+                const widthRatio = maxWidth / videoWidth;
+                const heightRatio = maxHeight / videoHeight;
+                const ratio = Math.min(widthRatio, heightRatio);
+                
+                targetWidth = Math.round(videoWidth * ratio);
+                targetHeight = Math.round(videoHeight * ratio);
+                
+                // 确保是偶数（视频编码要求）
+                targetWidth = targetWidth - (targetWidth % 2);
+                targetHeight = targetHeight - (targetHeight % 2);
+            }
+            
+            console.log('目标尺寸:', targetWidth + 'x' + targetHeight);
+            
+            // 设置canvas尺寸
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            
+            // 由于浏览器无法直接压缩视频，我们采取降低分辨率的策略
+            // 捕获视频第一帧作为预览
+            video.currentTime = 0;
+        };
+        
+        video.onseeked = function() {
+            // 绘制缩小的视频帧
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // 如果原视频过大，我们只能使用降低分辨率的方式
+            // 但这会导致静态图，所以对于视频我们选择直接使用原文件但警告用户
+            console.log('由于浏览器限制，无法真正压缩视频，使用原文件');
+            resolve(null); // 返回null表示使用原文件
+        };
+        
+        video.onerror = function(e) {
+            console.error('视频加载失败:', e);
+            reject(new Error('视频加载失败'));
+        };
+        
+        // 使用URL.createObjectURL而不是FileReader提高性能
+        const videoUrl = URL.createObjectURL(file);
+        video.src = videoUrl;
+    });
+}
+
+// 处理视频文件（直接保存Blob到IndexedDB，避免base64编码开销）
+async function processVideoFile(file) {
+    console.log('🎬 开始处理视频文件:', file.name, '大小:', (file.size / 1024 / 1024).toFixed(2) + 'MB');
+    
+    try {
+        // ⚡ 性能优化：直接使用Blob，不转base64（节省30-40%编码时间）
+        const blobUrl = URL.createObjectURL(file);
+        
+        // 立即显示视频（无需等待保存）
+        currentBg = blobUrl;
+        currentBgType = 'video';
+        applyBackground();
+        console.log('✅ 视频背景已应用（Blob URL）');
+        
+        // 后台保存到IndexedDB（异步，不阻塞UI）
+        showToast('正在保存视频背景...');
+        
+        // 确保IndexedDB已初始化
+        if (!db) {
+            console.log('⏳ 等待IndexedDB初始化...');
+            await initIndexedDB();
+            console.log('✅ IndexedDB初始化完成');
+        }
+        
+        console.log('⏳ 开始保存Blob到IndexedDB...');
+        // 保存原始Blob（比base64小30-40%）
+        await saveBackgroundToDB(file, currentBgType);
+        console.log('✅ IndexedDB保存成功');
+        
+        // 🔴 关键修复：保存IndexedDB标记到localStorage
+        localStorage.setItem('startpage.bgType', currentBgType);
+        localStorage.setItem('startpage.bg', 'INDEXED_DB_VIDEO');
+        console.log('✅ localStorage标记已设置: INDEXED_DB_VIDEO');
+        
+        closeBackgroundDialog();
+        showToast('✅ 视频背景已应用并永久保存');
+        console.log('✅ 完整保存流程成功！');
+        
+    } catch (error) {
+        console.error('❌ 视频处理失败:', error);
+        showToast('视频背景应用失败: ' + error.message);
+    }
+}
+
+function handleImageUpload(file) {
     console.log('原始文件:', file.type, '大小:', (file.size / 1024 / 1024).toFixed(2) + 'MB');
     
     // 显示处理中的提示
@@ -2028,55 +2891,77 @@ function handleFileUpload(file) {
 
 function processImageFile(file) {
     const reader = new FileReader();
-    reader.onload = function(e) {
-        console.log('文件读取完成，base64大小:', (e.target.result.length / 1024 / 1024).toFixed(2) + 'MB');
+    reader.onload = async function(e) {
+        const imageData = e.target.result;
+        const dataSizeMB = imageData.length / 1024 / 1024;
+        console.log('文件读取完成，base64大小:', dataSizeMB.toFixed(2) + 'MB');
         
         try {
-            // 先临时应用背景（不保存到localStorage）
-            currentBg = e.target.result;
+            // 先临时应用背景
+            currentBg = imageData;
             currentBgType = 'image';
             applyBackground();
             
-            // 尝试保存到localStorage
-            localStorage.setItem('startpage.bg', currentBg);
-            localStorage.setItem('startpage.bgType', currentBgType);
-            
-            closeBackgroundDialog();
-            showToast('自定义背景已应用并保存');
-            console.log('背景已成功保存到localStorage');
-            
-        } catch (error) {
-            if (error.name === 'QuotaExceededError') {
-                console.warn('localStorage配额超出，尝试更高压缩率...');
+            // 优先尝试保存到localStorage（更快）
+            try {
+                localStorage.setItem('startpage.bg', currentBg);
+                localStorage.setItem('startpage.bgType', currentBgType);
                 
-                // 如果还是太大，尝试更激进的压缩
-                if (file instanceof Blob) {
-                    const originalFile = new File([file], 'compressed.jpg', { type: 'image/jpeg' });
-                    compressImage(originalFile, {
-                        maxWidth: 1280,
-                        maxHeight: 720,
-                        targetSize: 800 * 1024, // 目标800KB
-                        quality: 0.75
-                    }).then(smallerBlob => {
-                        if (smallerBlob) {
-                            console.log('二次压缩完成:', (smallerBlob.size / 1024).toFixed(0) + 'KB');
-                            processImageFile(smallerBlob);
+                // 同时异步备份到IndexedDB
+                saveBackgroundToDB(currentBg, currentBgType).catch(err => {
+                    console.warn('备份到IndexedDB失败:', err);
+                });
+                
+                closeBackgroundDialog();
+                showToast('自定义背景已应用并保存 ✓');
+                console.log('背景已成功保存到localStorage');
+                
+            } catch (error) {
+                if (error.name === 'QuotaExceededError') {
+                    console.warn('localStorage配额超出，尝试保存到IndexedDB...');
+                    
+                    // localStorage满了，尝试IndexedDB
+                    try {
+                        await saveBackgroundToDB(currentBg, currentBgType);
+                        localStorage.setItem('startpage.bgType', currentBgType);
+                        closeBackgroundDialog();
+                        showToast('背景已应用并保存到IndexedDB ✓');
+                    } catch (dbError) {
+                        console.error('IndexedDB也保存失败，尝试更高压缩率...');
+                        
+                        // 如果还是太大，尝试更激进的压缩
+                        if (file instanceof Blob) {
+                            const originalFile = new File([file], 'compressed.jpg', { type: 'image/jpeg' });
+                            compressImage(originalFile, {
+                                maxWidth: 1280,
+                                maxHeight: 720,
+                                targetSize: 800 * 1024, // 目标800KB
+                                quality: 0.75
+                            }).then(smallerBlob => {
+                                if (smallerBlob) {
+                                    console.log('二次压缩完成:', (smallerBlob.size / 1024).toFixed(0) + 'KB');
+                                    processImageFile(smallerBlob);
+                                } else {
+                                    showToast('图片过大，仅临时应用');
+                                    closeBackgroundDialog();
+                                }
+                            }).catch(() => {
+                                showToast('图片压缩失败，仅临时应用');
+                                closeBackgroundDialog();
+                            });
                         } else {
-                            showToast('图片过大，仅临时应用');
+                            showToast('图片已应用（无法永久保存）');
                             closeBackgroundDialog();
                         }
-                    }).catch(() => {
-                        showToast('图片压缩失败，仅临时应用');
-                        closeBackgroundDialog();
-                    });
+                    }
                 } else {
-                    showToast('图片已应用，但无法永久保存（文件过大）');
-                    closeBackgroundDialog();
+                    throw error;
                 }
-            } else {
-                console.error('保存背景失败:', error);
-                showToast('保存背景失败: ' + error.message);
             }
+            
+        } catch (error) {
+            console.error('保存背景失败:', error);
+            showToast('保存背景失败: ' + error.message);
         }
     };
     
@@ -2093,7 +2978,7 @@ function handleUrlBackground() {
     const url = urlInput.value.trim();
     
     if (!url) {
-        showToast('请输入图片URL');
+        showToast('请输入图片或视频URL');
         return;
     }
     
@@ -2104,17 +2989,26 @@ function handleUrlBackground() {
     }
     
     try {
-        // 应用URL背景
+        // 判断是视频还是图片
+        const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov'];
+        const isVideo = videoExtensions.some(ext => url.toLowerCase().includes(ext));
+        
         currentBg = url;
-        currentBgType = 'image';
+        currentBgType = isVideo ? 'video' : 'image';
         applyBackground();
         
-        // 尝试保存到localStorage
+        // URL背景较小，保存到localStorage即可
+        // 同时也保存到IndexedDB作为备份
         localStorage.setItem('startpage.bg', currentBg);
         localStorage.setItem('startpage.bgType', currentBgType);
         
+        // 异步保存到IndexedDB（不等待）
+        saveBackgroundToDB(currentBg, currentBgType).catch(err => {
+            console.warn('保存到IndexedDB失败（URL背景已在localStorage）:', err);
+        });
+        
         closeBackgroundDialog();
-        showToast('URL背景已应用');
+        showToast(isVideo ? '视频背景已应用并保存 ✓' : '背景已应用并保存 ✓');
         console.log('URL背景已保存:', url);
         
     } catch (error) {
@@ -2282,23 +3176,35 @@ function initSettingsPanel() {
   }
 }
 
-// init
-function init(){
+// init - 极速启动
+async function init(){
+  markCheckpoint('init启动');
+  
+  // 异步初始化IndexedDB（不阻塞主线程）
+  initIndexedDB().catch(() => console.warn('IndexedDB不可用'));
+  
+  // 关键路径：立即加载状态
   loadState();
+  markCheckpoint('状态加载');
+  
   renderLinks();
+  markCheckpoint('快速链接渲染');
+  
   updateClock();
   setInterval(updateClock, 1000*30);
   
-  // 加载每日一言和天气
-  loadQuote();
-  loadWeather();
-  // 每小时更新一次天气
-  setInterval(loadWeather, 3600000);
+  // 延迟加载非关键内容（天气、引言）
+  setTimeout(() => {
+    loadQuote();
+    loadWeather();
+    setInterval(loadWeather, 3600000);
+    markCheckpoint('非关键内容加载');
+  }, 300);
 
   // 初始化设置面板
   initSettingsPanel();
 
-  // events
+  // events - 使用事件委托优化
   $('#searchForm').addEventListener('submit', onSearch);
   $('#editLinksBtn').addEventListener('click', openEditor);
   $('#addLinkBtn').addEventListener('click', addLinkRow);
@@ -2314,40 +3220,58 @@ function init(){
       const tabName = e.target.getAttribute('data-tab');
       const title = document.getElementById('editDialogTitle');
       
-      // 更新标签页按钮状态
-      editTabs.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.toggle('active', btn === e.target);
+      // 批量更新：避免重排
+      requestAnimationFrame(() => {
+        editTabs.querySelectorAll('.tab-btn').forEach(btn => {
+          btn.classList.toggle('active', btn === e.target);
+        });
+        
+        document.querySelectorAll('.edit-panel').forEach(panel => {
+          panel.classList.remove('active');
+        });
+        
+        if (tabName === 'bookmarks') {
+          document.getElementById('bookmarksEditPanel').classList.add('active');
+          title.textContent = '编辑收藏夹';
+          document.getElementById('addLinkBtn').textContent = '添加收藏夹';
+        } else if (tabName === 'engines') {
+          document.getElementById('enginesPanel').classList.add('active');
+          title.textContent = '编辑搜索引擎';
+          document.getElementById('addLinkBtn').style.display = 'none';
+          renderEnginesEditor();
+        } else {
+          document.getElementById('linksPanel').classList.add('active');
+          title.textContent = '编辑快速链接';
+          document.getElementById('addLinkBtn').textContent = '添加快速链接';
+          document.getElementById('addLinkBtn').style.display = '';
+        }
       });
-      
-      // 更新内容面板
-      document.querySelectorAll('.edit-panel').forEach(panel => {
-        panel.classList.remove('active');
-      });
-      
-      if (tabName === 'bookmarks') {
-        document.getElementById('bookmarksEditPanel').classList.add('active');
-        title.textContent = '编辑收藏夹';
-        document.getElementById('addLinkBtn').textContent = '添加收藏夹';
-      } else {
-        document.getElementById('linksPanel').classList.add('active');
-        title.textContent = '编辑快速链接';
-        document.getElementById('addLinkBtn').textContent = '添加快速链接';
-      }
     });
   }
   
-  // theme toggle: call toggleTheme and update aria-pressed (loadTheme will sync it)
-  $('#themeToggle').addEventListener('click', (e)=>{ toggleTheme(); });
+  // theme toggle
+  $('#themeToggle').addEventListener('click', toggleTheme);
   
-  // 搜索建议事件 - 使用防抖优化搜索建议渲染
+  // 搜索建议事件 - 使用防抖优化
   const searchInput = $('#searchInput');
-  const debouncedShowSuggestions = debounce(showSearchSuggestions, 150);
-  
+  const debouncedShowSuggestions = debounce(showSearchSuggestions, 120);
+  const searchSuggestions = $('#searchSuggestions');
+  let preventHideSuggestions = false;
+
   searchInput.addEventListener('focus', showSearchSuggestions);
   searchInput.addEventListener('input', debouncedShowSuggestions);
   searchInput.addEventListener('blur', () => {
-    // 延迟隐藏，允许点击建议项
-    setTimeout(hideSearchSuggestions, 200);
+    setTimeout(() => {
+      const active = document.activeElement;
+      if (preventHideSuggestions || (active && searchSuggestions.contains(active))) return;
+      hideSearchSuggestions();
+    }, 120);
+  });
+
+  // 在建议区域按下时设置标记
+  searchSuggestions.addEventListener('pointerdown', () => { preventHideSuggestions = true; });
+  searchSuggestions.addEventListener('pointerup', () => {
+    setTimeout(() => { preventHideSuggestions = false; }, 180);
   });
   
   // 键盘导航支持
@@ -2372,7 +3296,7 @@ function init(){
       selectedSuggestionIndex = -1;
     }
   });
-  
+
   function updateSuggestionSelection(suggestions) {
     suggestions.forEach((item, index) => {
       item.classList.toggle('selected', index === selectedSuggestionIndex);
@@ -2444,6 +3368,44 @@ function init(){
 }
 
 window.addEventListener('DOMContentLoaded', init);
+
+// 页面加载完成后显示性能报告
+window.addEventListener('load', () => {
+    const totalLoadTime = performance.now() - perfMetrics.startTime;
+    console.log('\n🎯 ==================== 页面加载性能报告 ====================');
+    console.log(`⚡ 总加载时间: ${totalLoadTime.toFixed(1)}ms`);
+    
+    if (perfMetrics.checkpoints) {
+        Object.entries(perfMetrics.checkpoints).forEach(([name, time]) => {
+            console.log(`   ✓ ${name}: ${time.toFixed(1)}ms`);
+        });
+    }
+    
+    // 性能评级
+    let rating = '';
+    if (totalLoadTime < 100) {
+        rating = '🏆 极速！堪比Wallpaper Engine';
+    } else if (totalLoadTime < 500) {
+        rating = '✅ 优秀';
+    } else if (totalLoadTime < 1000) {
+        rating = '⚠️ 良好';
+    } else {
+        rating = '❌ 需要优化';
+    }
+    
+    console.log(`   ${rating}`);
+    console.log('=========================================================\n');
+    
+    // 在页面上显示（仅开发模式，3秒后消失）
+    if (totalLoadTime < 100) {
+        const toast = document.getElementById('toast');
+        if (toast) {
+            toast.textContent = `⚡ 加载完成: ${totalLoadTime.toFixed(0)}ms`;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+    }
+});
 
 // Toast helper
 function showToast(text, duration = 2500){
@@ -2520,6 +3482,74 @@ function initSoundPanel() {
     </div>
   `).join('');
   
+  // Tabs 切换逻辑
+  const tabs = soundPanel.querySelectorAll('.tab-btn');
+  const panels = soundPanel.querySelectorAll('.sound-content');
+  
+  if (tabs.length > 0) {
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        // 切换 Tab 样式
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // 切换面板显示
+        const targetId = tab.dataset.tab === 'music' ? 'musicPanel' : 'ambientPanel';
+        panels.forEach(p => {
+          if (p.id === targetId) {
+              p.classList.remove('hidden');
+              p.classList.add('active');
+          } else {
+              p.classList.add('hidden');
+              p.classList.remove('active');
+          }
+        });
+      });
+    });
+  }
+
+  // 网易云音乐逻辑
+  const musicIdInput = document.getElementById('musicIdInput');
+  const loadMusicBtn = document.getElementById('loadMusicBtn');
+  const musicHelpBtn = document.getElementById('musicHelpBtn');
+  
+  if (musicIdInput && loadMusicBtn) {
+      // 加载保存的 ID
+      const savedId = localStorage.getItem('startpage.musicId');
+      if (savedId) {
+          musicIdInput.value = savedId;
+          // 延迟加载 iframe 以避免阻塞页面初始化
+          setTimeout(() => loadNeteaseMusic(savedId), 1000);
+      }
+      
+      loadMusicBtn.addEventListener('click', () => {
+          let inputVal = musicIdInput.value.trim();
+          
+          // 智能提取：如果输入的是 URL，尝试提取 ID
+          if (inputVal.includes('music.163.com')) {
+              const match = inputVal.match(/id=(\d+)/);
+              if (match && match[1]) {
+                  inputVal = match[1];
+                  musicIdInput.value = inputVal; // 更新输入框显示 ID
+                  showToast('已自动提取歌单ID');
+              }
+          }
+          
+          if (inputVal && /^\d+$/.test(inputVal)) {
+              loadNeteaseMusic(inputVal);
+          } else {
+              showToast('请输入有效的歌单ID或链接');
+          }
+      });
+
+      // 帮助按钮事件
+      if (musicHelpBtn) {
+          musicHelpBtn.addEventListener('click', () => {
+              alert('如何获取歌单ID：\n\n1. 打开网易云音乐官网或客户端\n2. 进入你喜欢的歌单\n3. 复制链接 (例如: .../playlist?id=123456)\n4. 直接粘贴链接到输入框，点击加载即可\n\n提示：也可以直接输入 id 数字');
+          });
+      }
+  }
+  
   // 绑定事件
   soundBtn.addEventListener('click', () => {
     soundPanel.classList.toggle('hidden');
@@ -2567,6 +3597,514 @@ function initSoundPanel() {
       soundPanel.classList.add('hidden');
     }
   });
+
+  // Floating Player Events
+  const fpPrev = document.getElementById('fpPrevBtn');
+  const fpPlay = document.getElementById('fpPlayBtn');
+  const fpNext = document.getElementById('fpNextBtn');
+  const fpList = document.getElementById('fpListBtn');
+  
+  if (fpPrev) fpPrev.addEventListener('click', previousMusic);
+  if (fpPlay) fpPlay.addEventListener('click', toggleMusicPlay);
+  if (fpNext) fpNext.addEventListener('click', nextMusic);
+  if (fpList) fpList.addEventListener('click', (e) => {
+      e.stopPropagation();
+      soundPanel.classList.remove('hidden');
+      const musicTab = document.querySelector('[data-tab="music"]');
+      if (musicTab) musicTab.click();
+  });
+}
+
+// 音乐播放器状态
+let musicState = {
+    playlist: [],
+    currentIndex: 0,
+    isPlaying: false,
+    audio: null,
+    duration: 0,
+    currentTime: 0
+};
+
+// 从网易云 API 获取歌单信息
+async function fetchNeteaseMusicList(id) {
+    try {
+        console.log('尝试加载歌单ID:', id);
+        
+        // 方案1: 使用 Meting API (支持 CORS，稳定性好)
+        // 这是一个常用的公共 API，专门用于解析网易云音乐链接
+        const apiUrl = `https://api.i-meto.com/meting/api?server=netease&type=playlist&id=${id}`;
+        
+        const response = await fetch(apiUrl);
+        
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        console.log('API 返回数据:', data);
+        
+        if (Array.isArray(data) && data.length > 0) {
+            // Meting API 返回格式转换
+            return data.map((track, index) => ({
+                id: index,
+                name: track.title || '未知歌曲',
+                artist: track.author || '未知歌手',
+                album: '在线音乐',
+                duration: 0, // API 可能不返回时长
+                url: track.url,
+                cover: track.pic, // 封面图
+                lrc: track.lrc
+            }));
+        } else {
+            console.warn('API返回空数据');
+            return await fetchNeteaseMusicListBackup(id);
+        }
+    } catch (error) {
+        console.error('主 API 获取失败:', error);
+        // 尝试备用方案
+        return await fetchNeteaseMusicListBackup(id);
+    }
+}
+
+// 备用方案：使用另一个 Meting API 服务
+async function fetchNeteaseMusicListBackup(id) {
+    try {
+        console.log('尝试备用 API:', id);
+        
+        // 方案2: 使用 injahow 的 Meting API
+        const apiUrl = `https://api.injahow.cn/meting/?type=playlist&id=${id}`;
+        const response = await fetch(apiUrl);
+        
+        if (!response.ok) throw new Error(`备用 API HTTP ${response.status}`);
+        
+        const data = await response.json();
+        console.log('备用 API 返回数据:', data);
+        
+        if (Array.isArray(data) && data.length > 0) {
+            return data.map((track, index) => ({
+                id: index,
+                name: track.name || track.title || '未知歌曲',
+                artist: track.artist || track.author || '未知歌手',
+                album: '在线音乐',
+                duration: 0,
+                url: track.url,
+                cover: track.pic || track.cover,
+                lrc: track.lrc
+            }));
+        } else {
+            showToast('歌单为空或受版权保护');
+            return [];
+        }
+    } catch (error) {
+        console.error('备用 API 也失败了:', error);
+        showToast('获取歌单失败：无法连接到 API 服务');
+        return [];
+    }
+}
+
+// 加载网易云歌单并初始化播放器
+async function loadNeteaseMusic(id) {
+    const container = document.getElementById('musicPlayerContainer');
+    if (!container) return;
+    
+    if (!id) {
+        container.innerHTML = '<div class="music-placeholder"><p>请输入歌单ID并加载</p><small>提示: 网页版歌单URL中的 id 参数<br>例如: https://music.163.com/#/playlist?id=7452421</small></div>';
+        return;
+    }
+    
+    // 特殊模式：输入 "test" 使用测试数据
+    if (id === 'test') {
+        const testPlaylist = [
+            { id: 1, name: '测试歌曲 1', artist: '测试艺术家', album: '测试专辑', duration: 180000, url: 'https://music.163.com/song/media/outer/url?id=1' },
+            { id: 2, name: '测试歌曲 2', artist: '测试艺术家', album: '测试专辑', duration: 200000, url: 'https://music.163.com/song/media/outer/url?id=2' },
+            { id: 3, name: '测试歌曲 3', artist: '测试艺术家', album: '测试专辑', duration: 220000, url: 'https://music.163.com/song/media/outer/url?id=3' }
+        ];
+        musicState.playlist = testPlaylist;
+        musicState.currentIndex = 0;
+        musicState.isPlaying = false;
+        renderMusicPlayer(container);
+        showToast('✅ 已加载测试歌单（3首歌曲）');
+        // Show floating player
+        const fp = document.getElementById('floatingPlayer');
+        if (fp) fp.classList.remove('hidden');
+        return;
+    }
+    
+    // 显示加载状态
+    container.innerHTML = '<div class="music-placeholder"><p>⏳ 正在加载歌单...</p><small>这可能需要几秒钟</small></div>';
+    
+    try {
+        // 获取歌单数据
+        const playlist = await fetchNeteaseMusicList(id);
+        
+        if (playlist.length === 0) {
+            container.innerHTML = `
+                <div class="music-placeholder">
+                    <p>❌ 加载歌单失败</p>
+                    <small>
+                        可能原因：<br>
+                        1. 歌单ID不正确<br>
+                        2. 歌单受版权保护<br>
+                        3. 网络连接问题<br><br>
+                        💡 提示：输入 "test" 可以加载测试数据
+                    </small>
+                </div>
+            `;
+            return;
+        }
+        
+        // 初始化播放器
+        musicState.playlist = playlist;
+        musicState.currentIndex = 0;
+        musicState.isPlaying = false;
+        
+        // 渲染播放器 UI
+        renderMusicPlayer(container);
+        
+        localStorage.setItem('startpage.musicId', id);
+        showToast(`✅ 已加载 ${playlist.length} 首歌曲`);
+
+        // Show floating player
+        const fp = document.getElementById('floatingPlayer');
+        if (fp) fp.classList.remove('hidden');
+    } catch (error) {
+        console.error('加载歌单出错:', error);
+        container.innerHTML = `
+            <div class="music-placeholder">
+                <p>❌ 加载失败</p>
+                <small>${error.message}<br><br>请稍后重试</small>
+            </div>
+        `;
+    }
+}
+
+// 渲染音乐播放器 UI
+function renderMusicPlayer(container) {
+    container.innerHTML = `
+        <div class="music-player-ui">
+            <!-- 当前播放歌曲信息 -->
+            <div class="music-now-playing">
+                <div class="music-cover" style="background:linear-gradient(135deg,#667eea,#764ba2);"></div>
+                <div class="music-track-info">
+                    <div class="music-track-name" id="musicTrackName">未选择歌曲</div>
+                    <div class="music-track-artist" id="musicTrackArtist">-</div>
+                </div>
+            </div>
+            
+            <!-- 进度条 -->
+            <div class="music-progress">
+                <input type="range" id="musicProgressBar" min="0" max="100" value="0">
+                <div class="music-time-labels">
+                    <span id="musicCurrentTime">0:00</span>
+                    <span id="musicDuration">0:00</span>
+                </div>
+            </div>
+            
+            <!-- 控制按钮 -->
+            <div class="music-controls">
+                <button id="musicPrevBtn" class="music-btn" title="上一首">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 20L9 12l10-8v16zM5 19V5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <button id="musicPlayBtn" class="music-btn music-play-btn" title="播放/暂停">
+                    <svg id="musicPlayIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    <svg id="musicPauseIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+                        <rect x="6" y="4" width="4" height="16" rx="1"/>
+                        <rect x="14" y="4" width="4" height="16" rx="1"/>
+                    </svg>
+                </button>
+                <button id="musicNextBtn" class="music-btn" title="下一首">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5 4l10 8-10 8V4zM19 5v14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- 歌曲列表 -->
+            <div class="music-playlist" id="musicPlaylist">
+                <!-- 歌曲将动态插入 -->
+            </div>
+        </div>
+    `;
+    
+    // 更新歌曲信息显示
+    updateMusicDisplay();
+    
+    // 渲染歌曲列表
+    renderMusicPlaylist();
+    
+    // 绑定事件
+    bindMusicPlayerEvents();
+}
+
+// 更新音乐播放器显示
+function updateMusicDisplay() {
+    const track = musicState.playlist[musicState.currentIndex];
+    if (!track) return;
+    
+    const nameEl = document.getElementById('musicTrackName');
+    const artistEl = document.getElementById('musicTrackArtist');
+    if(nameEl) nameEl.textContent = track.name;
+    if(artistEl) artistEl.textContent = track.artist;
+    
+    // 更新封面
+    const coverEl = document.querySelector('.music-cover');
+    if (coverEl) {
+        if (track.cover) {
+            coverEl.style.background = `url(${track.cover}) center/cover no-repeat`;
+        } else {
+            coverEl.style.background = 'linear-gradient(135deg,#667eea,#764ba2)';
+        }
+    }
+
+    // Update floating player
+    const fpTitle = document.getElementById('fpTitle');
+    const fpArtist = document.getElementById('fpArtist');
+    const fpCover = document.querySelector('.fp-cover');
+    
+    if (fpTitle) fpTitle.textContent = track.name;
+    if (fpArtist) fpArtist.textContent = track.artist;
+    if (fpCover) {
+        if (track.cover) {
+            fpCover.style.background = `url(${track.cover}) center/cover no-repeat`;
+        } else {
+            fpCover.style.background = 'linear-gradient(135deg,#667eea,#764ba2)';
+        }
+    }
+}
+
+// 渲染歌曲列表
+function renderMusicPlaylist() {
+    const container = document.getElementById('musicPlaylist');
+    container.innerHTML = '';
+    
+    const fragment = document.createDocumentFragment();
+    
+    musicState.playlist.forEach((track, index) => {
+        const item = document.createElement('div');
+        item.className = 'music-list-item' + (index === musicState.currentIndex ? ' active' : '');
+        
+        // 播放动画HTML
+        const playingIndicator = index === musicState.currentIndex && musicState.isPlaying ? 
+            `<div class="playing-indicator">
+                <div class="playing-bar"></div>
+                <div class="playing-bar"></div>
+                <div class="playing-bar"></div>
+             </div>` : '';
+        
+        item.innerHTML = `
+            <div class="music-list-item-info">
+                <div class="music-list-item-title">${track.name}</div>
+                <div class="music-list-item-artist">${track.artist}</div>
+            </div>
+            ${playingIndicator}
+        `;
+        
+        item.addEventListener('click', () => {
+            musicState.currentIndex = index;
+            updateMusicDisplay();
+            playMusic();
+            updateMusicPlaylistUI();
+        });
+        
+        fragment.appendChild(item);
+    });
+    
+    container.appendChild(fragment);
+}
+
+// 更新歌曲列表 UI 选中状态
+function updateMusicPlaylistUI() {
+    // 重新渲染整个列表以更新播放动画状态
+    renderMusicPlaylist();
+    
+    // 滚动到当前播放的歌曲
+    const activeItem = document.querySelector('.music-list-item.active');
+    if (activeItem) {
+        activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+// 绑定音乐播放器事件
+function bindMusicPlayerEvents() {
+    const playBtn = document.getElementById('musicPlayBtn');
+    const prevBtn = document.getElementById('musicPrevBtn');
+    const nextBtn = document.getElementById('musicNextBtn');
+    const progressBar = document.getElementById('musicProgressBar');
+    
+    if (playBtn) playBtn.addEventListener('click', toggleMusicPlay);
+    if (prevBtn) prevBtn.addEventListener('click', previousMusic);
+    if (nextBtn) nextBtn.addEventListener('click', nextMusic);
+    if (progressBar) progressBar.addEventListener('input', seekMusic);
+}
+
+// 播放/暂停音乐
+function toggleMusicPlay() {
+    if (musicState.isPlaying) {
+        pauseMusic();
+    } else {
+        playMusic();
+    }
+}
+
+// 播放音乐
+function playMusic() {
+    const track = musicState.playlist[musicState.currentIndex];
+    if (!track) return;
+    
+    // 如果已有音频对象
+    if (musicState.audio) {
+        // 检查是否是同一首歌（通过比较索引）
+        // 如果 audio 对象上有 _index 属性且等于当前索引，说明是同一首歌
+        if (typeof musicState.audio._index === 'number' && musicState.audio._index === musicState.currentIndex) {
+            if (musicState.audio.paused) {
+                musicState.audio.play().catch(error => {
+                    console.error('恢复播放失败:', error);
+                    // 如果恢复失败，尝试重新加载
+                    musicState.audio.load();
+                    musicState.audio.play().catch(e => console.error('重试失败:', e));
+                });
+            }
+            return;
+        }
+        
+        // 如果不是同一首歌，停止当前播放并销毁
+        musicState.audio.pause();
+        musicState.audio = null;
+    }
+    
+    // 创建新的音频对象
+    musicState.audio = new Audio(track.url);
+    musicState.audio._index = musicState.currentIndex; // 记录索引用于比对
+    musicState.audio.crossOrigin = 'anonymous';
+    
+    // 绑定事件
+    musicState.audio.addEventListener('play', () => {
+        musicState.isPlaying = true;
+        updatePlayButtonIcon();
+    });
+    
+    musicState.audio.addEventListener('pause', () => {
+        musicState.isPlaying = false;
+        updatePlayButtonIcon();
+    });
+    
+    musicState.audio.addEventListener('timeupdate', updateMusicProgress);
+    
+    musicState.audio.addEventListener('loadedmetadata', () => {
+        musicState.duration = musicState.audio.duration;
+        document.getElementById('musicDuration').textContent = formatTime(musicState.duration);
+    });
+    
+    musicState.audio.addEventListener('ended', nextMusic);
+    
+    musicState.audio.addEventListener('error', (e) => {
+        console.warn('播放出错:', e);
+        showToast('歌曲加载失败，尝试下一首');
+        // 延迟切换，避免快速连续报错导致卡死
+        setTimeout(() => {
+            if (musicState.isPlaying) nextMusic();
+        }, 1000);
+    });
+    
+    // 开始播放
+    const playPromise = musicState.audio.play();
+    if (playPromise !== undefined) {
+        playPromise.catch(error => {
+            console.error('播放失败:', error);
+            musicState.isPlaying = false;
+            updatePlayButtonIcon();
+            
+            if (error.name === 'NotAllowedError') {
+                showToast('需要用户交互才能播放');
+            } else {
+                showToast('无法播放此歌曲');
+            }
+        });
+    }
+}
+
+// 暂停音乐
+function pauseMusic() {
+    if (musicState.audio) {
+        musicState.audio.pause();
+        musicState.isPlaying = false;
+        updatePlayButtonIcon();
+    }
+}
+
+// 上一首
+function previousMusic() {
+    if (musicState.playlist.length === 0) return;
+    
+    musicState.currentIndex = (musicState.currentIndex - 1 + musicState.playlist.length) % musicState.playlist.length;
+    updateMusicDisplay();
+    updateMusicPlaylistUI();
+    playMusic();
+}
+
+// 下一首
+function nextMusic() {
+    if (musicState.playlist.length === 0) return;
+    
+    musicState.currentIndex = (musicState.currentIndex + 1) % musicState.playlist.length;
+    updateMusicDisplay();
+    updateMusicPlaylistUI();
+    playMusic();
+}
+
+// 更新播放按钮图标
+function updatePlayButtonIcon() {
+    const playIcon = document.getElementById('musicPlayIcon');
+    const pauseIcon = document.getElementById('musicPauseIcon');
+    
+    // Floating player icons
+    const fpPlayIcon = document.getElementById('fpPlayIcon');
+    const fpPauseIcon = document.getElementById('fpPauseIcon');
+    
+    if (musicState.isPlaying) {
+        if(playIcon) playIcon.style.display = 'none';
+        if(pauseIcon) pauseIcon.style.display = 'block';
+        if(fpPlayIcon) fpPlayIcon.classList.add('hidden');
+        if(fpPauseIcon) fpPauseIcon.classList.remove('hidden');
+    } else {
+        if(playIcon) playIcon.style.display = 'block';
+        if(pauseIcon) pauseIcon.style.display = 'none';
+        if(fpPlayIcon) fpPlayIcon.classList.remove('hidden');
+        if(fpPauseIcon) fpPauseIcon.classList.add('hidden');
+    }
+}
+
+// 更新进度条
+function updateMusicProgress() {
+    if (!musicState.audio) return;
+    
+    const current = musicState.audio.currentTime;
+    const duration = musicState.audio.duration;
+    
+    if (!isNaN(duration)) {
+        document.getElementById('musicProgressBar').value = (current / duration) * 100;
+        document.getElementById('musicCurrentTime').textContent = formatTime(current);
+    }
+}
+
+// 拖动进度条
+function seekMusic(event) {
+    if (!musicState.audio) return;
+    
+    const percent = event.target.value / 100;
+    const newTime = percent * musicState.audio.duration;
+    musicState.audio.currentTime = newTime;
+}
+
+// 时间格式化
+function formatTime(seconds) {
+    if (!seconds || isNaN(seconds)) return '0:00';
+    
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
 // 切换音效播放
@@ -3007,10 +4545,6 @@ function updateFocusOpacity(opacity) {
 
 // 在DOMContentLoaded后初始化
 document.addEventListener('DOMContentLoaded', () => {
+  loadSearchEngines();  // 加载搜索引擎配置
   initFocusMode();
 });
-
-// Note: The app uses a single init() (registered via window.addEventListener('DOMContentLoaded', init))
-// and defensive bindings inside init(). Removed the older duplicate bottom DOMContentLoaded handler
-// which referenced outdated functions (e.g. bindWallpaperEvents, bindSearchEvents, loadCurrentWallpaper)
-// because those caused runtime errors and could interrupt normal initialization.

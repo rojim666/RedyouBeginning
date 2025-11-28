@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "红柚起始页",
+  "version": "1.0.0",
+  "description": "美观的浏览器新标签页 - 支持书签收藏夹、天气、每日一言、快速链接",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://api.nxvav.cn/*",
+    "https://wttr.in/*",
+    "https://www.google.com/*"
+  ],
+  "chrome_url_overrides": {
+    "newtab": "index.html"
+  },
+  "icons": {
+    "16": "_logo.svg",
+    "48": "_logo.svg",
+    "128": "_logo.svg"
+  },
+  "action": {
+    "default_title": "红柚起始页"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["music/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
