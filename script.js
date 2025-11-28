@@ -2047,14 +2047,11 @@ const presetBackgrounds = [
     { id: 'solid4', name: '深红', type: 'color', value: '#7f1d1d' }
 ];
 
-// 预设高清动态壁纸（视频背景）
 const presetVideos = [
-    { id: 'video1', name: '上杉绘梨衣', type: 'video', value: 'video/上杉绘梨衣.mp4', thumbnail: 'video/上杉绘梨衣.mp4' },
-    { id: 'video2', name: '伊蕾娜', type: 'video', value: 'video/伊蕾娜.mp4', thumbnail: 'video/伊蕾娜.mp4' },
-    { id: 'video3', name: '心海', type: 'video', value: 'video/心海.mp4', thumbnail: 'video/心海.mp4' },
-    { id: 'video4', name: '暗光', type: 'video', value: 'video/暗光.mp4', thumbnail: 'video/暗光.mp4' },
-    { id: 'video5', name: '胡桃', type: 'video', value: 'video/胡桃.mp4', thumbnail: 'video/胡桃.mp4' }
+  { id: 'video1', name: '请在自定义里自己上传', type: 'video', value: 'video/上杉绘梨衣.mp4', thumbnail: 'video/上杉绘梨衣.mp4' },
+
 ];
+
 
 // 新增预设背景颜色数据
 const presetColors = [
