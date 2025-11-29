@@ -3949,7 +3949,7 @@ async function loadNeteaseMusic(id) {
         renderMusicPlayer(container);
         
         localStorage.setItem('startpage.musicId', id);
-        showToast(`✅ 已加载 ${playlist.length} 首歌曲`);
+        showToast(` 已加载 ${playlist.length} 首歌曲`);
 
         // Show floating player
         const fp = document.getElementById('floatingPlayer');
@@ -3958,7 +3958,7 @@ async function loadNeteaseMusic(id) {
         console.error('加载歌单出错:', error);
         container.innerHTML = `
             <div class="music-placeholder">
-                <p>❌ 加载失败</p>
+                <p> 加载失败</p>
                 <small>${error.message}<br><br>请稍后重试</small>
             </div>
         `;
@@ -4843,14 +4843,23 @@ function initAppearanceSettings() {
     clockSize: 48,
     clockTextOpacity: 100,
     clockBgOpacity: 80,
+    clockColor: null,
+    showClock: true,
     greetingSize: 16,
     greetingTextOpacity: 100,
     greetingBgOpacity: 80,
+    greetingColor: null,
+    showGreeting: true,
     quoteSize: 13,
     quoteTextOpacity: 85,
     quoteBgOpacity: 80,
+    quoteColor: null,
+    showQuote: true,
     searchSize: 100,
-    searchBgOpacity: 72
+    searchBgOpacity: 72,
+    showSearch: true,
+    bookmarkColumns: 6,
+    showBookmarks: true
   };
   
   // 获取当前设置 (合并默认值以处理新字段)
@@ -4865,7 +4874,8 @@ function initAppearanceSettings() {
     quoteText: document.getElementById('quoteText'),
     quoteAuthor: document.getElementById('quoteAuthor'),
     searchInput: document.querySelector('.search input'),
-    searchContainer: document.querySelector('.search-container')
+    searchContainer: document.querySelector('.search-container'),
+    linksGrid: document.getElementById('linksGrid')
   };
   
   // 滑块引用
@@ -4880,7 +4890,17 @@ function initAppearanceSettings() {
     quoteTextOpacity: document.getElementById('quoteTextOpacitySlider'),
     quoteBgOpacity: document.getElementById('quoteBgOpacitySlider'),
     searchSize: document.getElementById('searchSizeSlider'),
-    searchBgOpacity: document.getElementById('searchBgOpacitySlider')
+    searchBgOpacity: document.getElementById('searchBgOpacitySlider'),
+    bookmarkColumns: document.getElementById('bookmarkColumnsSlider')
+  };
+
+  // 复选框引用
+  const checkboxes = {
+    showClock: document.getElementById('showClockCheck'),
+    showGreeting: document.getElementById('showGreetingCheck'),
+    showQuote: document.getElementById('showQuoteCheck'),
+    showSearch: document.getElementById('showSearchCheck'),
+    showBookmarks: document.getElementById('showBookmarksCheck')
   };
   
   // 值显示引用
@@ -4895,7 +4915,8 @@ function initAppearanceSettings() {
     quoteTextOpacity: document.getElementById('quoteTextOpacityValue'),
     quoteBgOpacity: document.getElementById('quoteBgOpacityValue'),
     searchSize: document.getElementById('searchSizeValue'),
-    searchBgOpacity: document.getElementById('searchBgOpacityValue')
+    searchBgOpacity: document.getElementById('searchBgOpacityValue'),
+    bookmarkColumns: document.getElementById('bookmarkColumnsValue')
   };
   
   // 应用设置到DOM
@@ -4903,11 +4924,25 @@ function initAppearanceSettings() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const baseColor = isDark ? '28, 28, 30' : '255, 255, 255';
     
+    // 可见性控制
+    if (elements.clock) elements.clock.style.display = newSettings.showClock ? '' : 'none';
+    if (elements.greeting) elements.greeting.style.display = newSettings.showGreeting ? '' : 'none';
+    if (elements.quote) elements.quote.style.display = newSettings.showQuote ? '' : 'none';
+    if (elements.searchContainer) elements.searchContainer.style.display = newSettings.showSearch ? '' : 'none';
+    if (elements.linksGrid) {
+        if (newSettings.showBookmarks) {
+            elements.linksGrid.style.removeProperty('display');
+        } else {
+            elements.linksGrid.style.setProperty('display', 'none', 'important');
+        }
+    }
+
     // 时钟
     if (elements.clock) {
       elements.clock.style.fontSize = `${newSettings.clockSize}px`;
-      // 文字透明度
-      elements.clock.style.color = `color-mix(in srgb, var(--text), transparent ${100 - newSettings.clockTextOpacity}%)`;
+      // 文字透明度 & 颜色
+      const textColor = newSettings.clockColor || 'var(--text)';
+      elements.clock.style.color = `color-mix(in srgb, ${textColor}, transparent ${100 - newSettings.clockTextOpacity}%)`;
       // 背景透明度
       elements.clock.style.background = `linear-gradient(135deg, rgba(${baseColor}, ${newSettings.clockBgOpacity/100}) 0%, rgba(255,255,255, 0.05) 100%)`;
       // 移除旧的 opacity 设置
@@ -4917,7 +4952,8 @@ function initAppearanceSettings() {
     // 问候语
     if (elements.greeting) {
       elements.greeting.style.fontSize = `${newSettings.greetingSize}px`;
-      elements.greeting.style.color = `color-mix(in srgb, var(--text), transparent ${100 - newSettings.greetingTextOpacity}%)`;
+      const textColor = newSettings.greetingColor || 'var(--text)';
+      elements.greeting.style.color = `color-mix(in srgb, ${textColor}, transparent ${100 - newSettings.greetingTextOpacity}%)`;
       elements.greeting.style.background = `linear-gradient(135deg, rgba(${baseColor}, ${newSettings.greetingBgOpacity/100}) 0%, rgba(255,255,255, 0.05) 100%)`;
       elements.greeting.style.opacity = '';
     }
@@ -4928,11 +4964,13 @@ function initAppearanceSettings() {
       elements.quote.style.opacity = '';
       // 文字颜色应用到内部文本
       if (elements.quoteText) {
-         elements.quoteText.style.color = `color-mix(in srgb, var(--text), transparent ${100 - newSettings.quoteTextOpacity}%)`;
+         const textColor = newSettings.quoteColor || 'var(--text)';
+         elements.quoteText.style.color = `color-mix(in srgb, ${textColor}, transparent ${100 - newSettings.quoteTextOpacity}%)`;
          elements.quoteText.style.fontSize = `${newSettings.quoteSize}px`;
       }
       if (elements.quoteAuthor) {
-         elements.quoteAuthor.style.color = `color-mix(in srgb, var(--muted), transparent ${100 - newSettings.quoteTextOpacity}%)`;
+         const textColor = newSettings.quoteColor ? newSettings.quoteColor : 'var(--muted)';
+         elements.quoteAuthor.style.color = `color-mix(in srgb, ${textColor}, transparent ${100 - newSettings.quoteTextOpacity}%)`;
          elements.quoteAuthor.style.fontSize = `${Math.max(10, newSettings.quoteSize - 2)}px`;
       }
     }
@@ -4946,8 +4984,27 @@ function initAppearanceSettings() {
     if (elements.searchInput) {
         elements.searchInput.style.backgroundColor = `rgba(${baseColor}, ${newSettings.searchBgOpacity / 100})`;
     }
+
+    // 桌面书签列数
+    if (elements.linksGrid) {
+      // 只有在桌面书签模式下才生效
+      elements.linksGrid.style.gridTemplateColumns = `repeat(${newSettings.bookmarkColumns}, 1fr)`;
+    }
   }
   
+  // 颜色输入引用
+  const colorInputs = {
+    clockColor: document.getElementById('clockColorInput'),
+    greetingColor: document.getElementById('greetingColorInput'),
+    quoteColor: document.getElementById('quoteColorInput')
+  };
+
+  const resetColorBtns = {
+    clockColor: document.getElementById('resetClockColorBtn'),
+    greetingColor: document.getElementById('resetGreetingColorBtn'),
+    quoteColor: document.getElementById('resetQuoteColorBtn')
+  };
+
   // 更新滑块和显示值
   function updateControls() {
     Object.keys(sliders).forEach(key => {
@@ -4955,7 +5012,27 @@ function initAppearanceSettings() {
         // 确保 settings 中有该值，否则使用默认
         const val = settings[key] !== undefined ? settings[key] : defaults[key];
         sliders[key].value = val;
-        values[key].textContent = key.includes('Opacity') || key.includes('searchSize') ? `${val}%` : val;
+        
+        if (key.includes('Opacity') || key.includes('searchSize')) {
+          values[key].textContent = `${val}%`;
+        } else {
+          values[key].textContent = val;
+        }
+      }
+    });
+    
+    // 更新颜色输入
+    Object.keys(colorInputs).forEach(key => {
+      if (colorInputs[key]) {
+        const val = settings[key] || '#ffffff'; // 默认显示白色，如果未设置
+        colorInputs[key].value = val;
+      }
+    });
+
+    // 更新复选框
+    Object.keys(checkboxes).forEach(key => {
+      if (checkboxes[key]) {
+        checkboxes[key].checked = settings[key] !== undefined ? settings[key] : defaults[key];
       }
     });
   }
@@ -4980,8 +5057,45 @@ function initAppearanceSettings() {
       sliders[key].addEventListener('input', (e) => {
         const value = parseInt(e.target.value);
         settings[key] = value;
-        values[key].textContent = key.includes('Opacity') || key.includes('searchSize') ? `${value}%` : value;
+        
+        if (key.includes('Opacity') || key.includes('searchSize')) {
+          values[key].textContent = `${value}%`;
+        } else {
+          values[key].textContent = value;
+        }
+        
         applySettings(settings);
+      });
+    }
+  });
+
+  // 绑定颜色事件
+  Object.keys(colorInputs).forEach(key => {
+    if (colorInputs[key]) {
+      colorInputs[key].addEventListener('input', (e) => {
+        settings[key] = e.target.value;
+        applySettings(settings);
+      });
+    }
+  });
+
+  // 绑定复选框事件
+  Object.keys(checkboxes).forEach(key => {
+    if (checkboxes[key]) {
+      checkboxes[key].addEventListener('change', (e) => {
+        settings[key] = e.target.checked;
+        applySettings(settings);
+      });
+    }
+  });
+
+  Object.keys(resetColorBtns).forEach(key => {
+    if (resetColorBtns[key]) {
+      resetColorBtns[key].addEventListener('click', () => {
+        settings[key] = null;
+        applySettings(settings);
+        // 重置输入框颜色
+        if (colorInputs[key]) colorInputs[key].value = '#ffffff';
       });
     }
   });

@@ -589,6 +589,7 @@ select::-ms-expand{
   display: grid !important;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;
+  justify-content: center;
 }
 
 /* 苹果风格链接卡片 - 极简版 */
