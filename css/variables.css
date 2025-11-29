@@ -1,0 +1,62 @@
+:root{
+  /* 苹果风格配色 - 浅色模式 */
+  --bg: linear-gradient(135deg, #e2edff 20%, #b3cfff 100%);
+  --bg-image: none;
+  --text: #1d1d1f;
+  --theme-transition: 500ms cubic-bezier(0.28, 0.11, 0.32, 1); /* Apple 缓动曲线 */
+  --control-bg: rgba(255, 255, 255, 0.72); /* 毛玻璃效果 */
+  --header-bg: rgba(255, 255, 255, 0.80); /* 顶部元素背景透明度，0.30 即 30% */
+  --control-text: #1d1d1f;
+  --control-border: rgba(0, 0, 0, 0.04);
+  --btn-bg: rgba(0, 0, 0, 0.04);
+  --muted: #86868b;
+  --card: rgba(255, 255, 255, 0.72);
+  --accent: #007aff; /* iOS 蓝色 */
+  --accent-hover: #0051d5;
+  --btn-primary-hover: #0051d5;
+  --btn-primary-shadow: rgba(0, 122, 255, 0.3);
+  --btn-secondary-hover: rgba(0, 0, 0, 0.06);
+  --success: #34c759; /* iOS 绿色 */
+  --warning: #ff9500; /* iOS 橙色 */
+  --danger: #ff3b30; /* iOS 红色 */
+  
+  /* 苹果风格阴影 */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.16);
+  
+  /* 毛玻璃效果 - 增强模糊半径 */
+  --blur-sm: blur(20px);
+  --blur-md: blur(40px);
+  --blur-lg: blur(60px);
+
+  --toggle-ease: cubic-bezier(.2,.9,.2,1);
+}
+
+[data-theme="dark"]{
+  /* 苹果风格配色 - 深色模式 */
+  --bg: linear-gradient(135deg, #111133 20%, #030313 100%);
+  --bg-image: none;
+  --text: #f5f5f7;
+  --control-bg: rgba(28, 28, 30, 0.72);
+  --header-bg: rgba(28, 28, 30, 0.30); /* 顶部元素背景透明度，0.30 即 30% */
+  --control-text: #f5f5f7;
+  --control-border: rgba(255, 255, 255, 0.06);
+  --btn-bg: rgba(255, 255, 255, 0.08);
+  --muted: #98989d;
+  --card: rgba(28, 28, 30, 0.72);
+  --accent: #0a84ff; /* iOS 深色模式蓝色 */
+  --accent-hover: #409cff;
+  --btn-primary-hover: #409cff;
+  --btn-primary-shadow: rgba(10, 132, 255, 0.3);
+  --btn-secondary-hover: rgba(255, 255, 255, 0.12);
+  --success: #30d158;
+  --warning: #ff9f0a;
+  --danger: #ff453a;
+  
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.6);
+}

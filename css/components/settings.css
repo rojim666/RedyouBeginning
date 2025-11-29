@@ -1,0 +1,607 @@
+/* 设置浮动按钮 - 右下角 */
+.settings-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--card);
+  backdrop-filter: var(--blur-lg) saturate(180%);
+  -webkit-backdrop-filter: var(--blur-lg) saturate(180%);
+  border: 1px solid var(--control-border);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.28, 0.11, 0.32, 1);
+  z-index: 999;
+  color: var(--control-text);
+}
+
+.settings-fab:hover {
+  transform: scale(1.1) rotate(90deg);
+  box-shadow: var(--shadow-xl);
+  border-color: rgba(0, 122, 255, 0.3);
+}
+
+.settings-fab:active {
+  transform: scale(0.95);
+}
+
+/* 设置面板 */
+.settings-panel {
+  position: fixed;
+  bottom: 84px;
+  right: 24px;
+  width: 280px;
+  background: var(--card);
+  backdrop-filter: var(--blur-lg) saturate(180%);
+  -webkit-backdrop-filter: var(--blur-lg) saturate(180%);
+  border: 1px solid var(--control-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-xl);
+  padding: 16px;
+  z-index: 998;
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
+  transition: all 0.3s cubic-bezier(0.28, 0.11, 0.32, 1);
+  pointer-events: none;
+}
+
+.settings-panel.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.settings-panel-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--control-text);
+  margin-bottom: 12px;
+  letter-spacing: -0.01em;
+}
+
+.settings-panel-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.28, 0.11, 0.32, 1);
+  color: var(--control-text);
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.settings-panel-item:hover {
+  background: var(--btn-bg);
+}
+
+.settings-panel-item:active {
+  transform: scale(0.98);
+}
+
+.settings-panel-item svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.settings-panel-item span {
+  flex: 1;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* 苹果风格对话框 */
+dialog{
+  border: none;
+  padding: 0;
+  background: transparent;
+  max-width: none;
+  max-height: none;
+}
+
+dialog::backdrop{
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: var(--blur-lg);
+  -webkit-backdrop-filter: var(--blur-lg);
+  animation: fadeIn 0.3s cubic-bezier(0.28, 0.11, 0.32, 1);
+}
+
+/* Edit Dialog Form */
+.edit-form{
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 480px;
+  max-width: 600px;
+  background: var(--card);
+  backdrop-filter: var(--blur-lg) saturate(180%);
+  -webkit-backdrop-filter: var(--blur-lg) saturate(180%);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--control-border);
+  animation: dialogContentPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.edit-form input[type="file"]{
+  padding: 6px;
+}
+
+/* 对话框头部 - iOS风格 */
+.dialog-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--control-border);
+  background: linear-gradient(180deg, var(--card) 0%, rgba(255, 255, 255, 0.8) 100%);
+}
+
+[data-theme="dark"] .dialog-header{
+  background: linear-gradient(180deg, var(--card) 0%, rgba(28, 28, 30, 0.8) 100%);
+}
+
+.dialog-header h3{
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--control-text);
+  letter-spacing: -0.02em;
+}
+
+.dialog-header .close-btn{
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--control-bg);
+  border: 1px solid var(--control-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.28, 0.11, 0.32, 1);
+  color: var(--control-text);
+  font-size: 20px;
+  line-height: 1;
+  padding: 0;
+}
+
+.dialog-header .close-btn:hover{
+  background: rgba(0, 0, 0, 0.06);
+  transform: scale(1.1);
+}
+
+.dialog-header .close-btn:active{
+  transform: scale(0.95);
+}
+
+[data-theme="dark"] .dialog-header .close-btn:hover{
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* 对话框内容区域 */
+.dialog-content{
+  padding: 24px;
+  max-height: 500px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.dialog-content::-webkit-scrollbar{
+  width: 8px;
+}
+
+.dialog-content::-webkit-scrollbar-track{
+  background: transparent;
+}
+
+.dialog-content::-webkit-scrollbar-thumb{
+  background: var(--control-border);
+  border-radius: 4px;
+}
+
+.dialog-content::-webkit-scrollbar-thumb:hover{
+  background: var(--muted);
+}
+
+/* 对话框底部操作栏 */
+.dialog-actions{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-top: 1px solid var(--control-border);
+  background: var(--control-bg);
+  gap: 12px;
+  margin-top:auto;
+}
+
+[data-theme="dark"] .dialog-actions{
+  background: var(--control-bg);
+}
+
+.dialog-actions-right{
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+
+/* Link Row Styles - 苹果风格链接编辑行 */
+.link-row{
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--control-bg);
+  border: 1px solid var(--control-border);
+  transition: all 0.2s cubic-bezier(0.28, 0.11, 0.32, 1);
+}
+
+.link-row:hover{
+  background: rgba(0, 122, 255, 0.04);
+  border-color: rgba(0, 122, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.link-row input{
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--control-border);
+  background: var(--card);
+  color: var(--control-text);
+  font-size: 14px;
+  font-family: var(--font-family);
+  transition: all 0.2s cubic-bezier(0.28, 0.11, 0.32, 1);
+}
+
+.link-row input:focus{
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+  background: var(--card);
+}
+
+.link-row input.title{
+  max-width: 160px;
+}
+
+.link-row .remove{
+  background: #ff3b30;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 0;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-family);
+  transition: all 0.2s cubic-bezier(0.28, 0.11, 0.32, 1);
+  flex-shrink: 0;
+}
+
+.link-row .remove:hover{
+  background: #ff2d20;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
+}
+
+.link-row .remove:active{
+  transform: translateY(0) scale(0.96);
+}
+
+/* 深色主题下的链接行 */
+[data-theme="dark"] .link-row{
+  background:rgba(255,255,255,0.03);
+}
+
+[data-theme="dark"] .link-row:hover{
+  background:rgba(255,255,255,0.05);
+}
+
+.bg-dialog{max-width:560px;width:90vw;border:none;border-radius:12px;background:var(--control-bg);color:var(--control-text);box-shadow:0 18px 50px rgba(2,6,23,0.28);overflow:hidden;max-height:85vh}
+.bg-dialog[open]{display:flex;flex-direction:column}
+.bg-dialog::backdrop{background:rgba(0,0,0,0.36);backdrop-filter:blur(4px)}
+
+/* Edit links dialog: remove default black border and make it match bg-dialog style */
+dialog#editDialog{
+  border:none;
+  border-radius:16px;
+  background:var(--control-bg);
+  color:var(--control-text);
+  box-shadow:0 20px 60px rgba(2,6,23,0.25);
+  overflow:hidden;
+  padding:0;
+  opacity:0;
+  transform:scale(0.95) translateY(-20px);
+  transition:opacity 0.25s ease, transform 0.25s ease;
+  width:90vw;
+  max-width:600px;
+  max-height:80vh;
+}
+
+dialog#editDialog[open]{
+  opacity:1;
+  transform:scale(1) translateY(0);
+}
+
+dialog#editDialog::backdrop{
+  background:rgba(0,0,0,0.4);
+  backdrop-filter:blur(6px);
+  animation:fadeIn 0.25s ease;
+}
+
+.edit-form{
+  padding:0;
+  display:flex;
+  flex-direction:column;
+  height:100%;
+}
+
+/* 编辑对话框标签页 */
+.edit-tabs{
+  display:flex;
+  border-bottom:1px solid var(--control-border);
+  gap:0;
+  background:rgba(0,0,0,0.02);
+  margin:-20px -20px 16px -20px;
+  padding:0 20px;
+}
+
+.edit-tabs .tab-btn{
+  background:transparent;
+  border:none;
+  padding:12px 16px;
+  cursor:pointer;
+  color:var(--muted);
+  border-radius:0;
+  transition:all 0.2s;
+  font-weight:500;
+  font-size:14px;
+  border-bottom:2px solid transparent;
+  margin-bottom:-1px;
+}
+
+.edit-tabs .tab-btn:hover{
+  color:var(--text);
+  background:transparent;
+}
+
+.edit-tabs .tab-btn.active{
+  color:var(--accent);
+  background:transparent;
+  border-bottom-color:var(--accent);
+  box-shadow:none;
+}
+
+.edit-panel{
+  display:none;
+}
+
+.edit-panel.active{
+  display:block;
+  animation:fadeIn 0.2s ease;
+}
+
+.bg-form{padding:0;display:flex;flex-direction:column;gap:0;height:100%;overflow:hidden}
+.bg-header{display:flex;justify-content:space-between;align-items:center;padding:20px 20px 0;border-bottom:1px solid var(--control-border);margin-bottom:16px}
+.bg-header h3{margin:0}
+.close-btn{background:transparent;border:0;font-size:20px;cursor:pointer;color:var(--muted);padding:4px}
+
+.bg-tabs{display:flex;border-bottom:1px solid var(--control-border);margin:0 20px}
+.tab-btn{background:transparent;border:0;padding:10px 14px;cursor:pointer;color:var(--muted);border-radius:8px;transition:all .18s;min-width:80px;text-align:center}
+.tab-btn:hover{background:rgba(0,0,0,0.04)}
+.tab-btn.active{color:var(--accent);background:rgba(37,99,235,0.06);box-shadow:0 6px 18px rgba(37,99,235,0.06)}
+
+.bg-content{padding:20px;min-height:280px;overflow-y:auto;flex:1}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* 编辑对话框标签页和面板 */
+.edit-tabs{display:flex;border-bottom:1px solid var(--control-border);padding:0 20px;margin-bottom:16px;gap:0}
+.edit-panel{display:none}
+.edit-panel.active{display:block}
+
+.presets-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.preset-item{aspect-ratio:16/9;border-radius:12px;border:1px solid rgba(0,0,0,0.06);cursor:pointer;background-size:cover;background-position:center;position:relative;overflow:hidden;transition:transform .28s cubic-bezier(.2,.9,.2,1), box-shadow .28s, border-color .18s}
+.preset-item:hover{transform:translateY(-6px) scale(1.02);box-shadow:0 10px 30px rgba(16,24,40,0.12);border-color:rgba(37,99,235,0.18)}
+.preset-item.selected{border-color:var(--accent);box-shadow:0 12px 36px rgba(37,99,235,0.12);transform:translateY(-4px) scale(1.03)}
+.preset-item .preset-preview{position:absolute;inset:0;border-radius:12px}
+.preset-item .preset-name{position:absolute;left:12px;bottom:10px;color:var(--control-text);background:rgba(0,0,0,0.05);backdrop-filter:blur(6px);padding:6px 10px;border-radius:8px;font-size:13px}
+
+/* subtle entry animation for the bg content / presets */
+.bg-content{animation:fadeUp .36s ease both}
+
+/* small improvements for preset hover focus accessibility */
+.preset-item:focus{outline:2px solid rgba(37,99,235,0.14);outline-offset:4px}
+
+.custom-upload{display:flex;flex-direction:column;gap:16px}
+.upload-area{border:2px dashed var(--control-border);border-radius:8px;padding:32px;text-align:center;cursor:pointer;transition:border-color .2s}
+.upload-area:hover{border-color:var(--accent)}
+.upload-area.dragover{border-color:var(--accent);background:rgba(37,99,235,0.05)}
+.upload-area small{display:block;margin-top:8px;color:var(--muted);font-size:12px}
+.upload-icon{font-size:32px;margin-bottom:8px}
+.url-input{margin-top:16px}
+.url-input label{display:block;margin-bottom:8px;font-size:14px;color:var(--muted)}
+.url-input input{width:100%;padding:10px;border:1px solid var(--control-border);border-radius:6px;background:var(--control-bg);color:var(--control-text);margin-bottom:12px}
+.url-input input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(37,99,235,0.1)}
+
+.bg-preview-section{padding:0 20px;margin-bottom:16px}
+.preview-controls{display:flex;gap:8px;align-items:center}
+.preview-controls select{flex:1;border-radius:8px;border:1px solid var(--control-border);background:var(--control-bg);padding:8px 10px;box-shadow:0 6px 18px rgba(2,6,23,0.04);transition:border-color .18s}
+
+/* url input styling inside bg dialog */
+.url-input input{border-radius:8px;border:1px solid var(--control-border);background:var(--control-bg);padding:10px;box-shadow:0 6px 18px rgba(2,6,23,0.04);transition:border-color .18s}
+
+.bg-actions{display:flex;gap:8px;padding:20px;border-top:1px solid var(--control-border)}
+
+/* Dialog-scoped button styles: save/cancel inside dialogs */
+dialog .btn, dialog .btn.small, .bg-form .btn, .edit-form .btn{
+  padding:10px 14px;
+  border-radius:10px;
+  font-weight:600;
+  box-shadow: none;
+  transition:transform .12s ease, box-shadow .12s ease, background .12s ease, opacity .12s ease;
+}
+
+dialog .btn:hover, .bg-form .btn:hover, .edit-form .btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 10px 24px var(--btn-primary-shadow, rgba(2,6,23,0.08));
+}
+
+/* primary/secondary variants inside dialogs */
+dialog .btn.primary, .bg-form .btn.primary, .edit-form .btn.primary{
+  background:var(--accent);
+  color:#fff;
+  border:0;
+}
+dialog .btn.primary:hover, .bg-form .btn.primary:hover, .edit-form .btn.primary:hover{
+  background:var(--btn-primary-hover);
+}
+dialog .btn.primary:active, .bg-form .btn.primary:active, .edit-form .btn.primary:active{
+  transform:translateY(0px) scale(.997);
+  box-shadow:0 6px 18px rgba(2,6,23,0.06);
+}
+
+dialog .btn.secondary, .bg-form .btn.secondary, .edit-form .btn.secondary{
+  background:var(--control-bg);
+  color:var(--control-text);
+  border:1px solid var(--control-border);
+}
+dialog .btn.secondary:hover, .bg-form .btn.secondary:hover, .edit-form .btn.secondary:hover{
+  background:var(--btn-secondary-hover);
+}
+
+/* smaller variant used in footers */
+dialog .btn.small, .edit-form .btn.small{padding:8px 10px;font-size:13px}
+
+/* focus accessibility */
+dialog .btn:focus, .bg-form .btn:focus, .edit-form .btn:focus{
+  outline:2px solid rgba(37,99,235,0.16);
+  outline-offset:2px;
+}
+
+@media (max-width:640px){
+  .bg-preview{height:120px}
+}
+
+/* Toast 通知 - iOS风格 */
+.toast{
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
+  background: rgba(28, 28, 30, 0.92);
+  backdrop-filter: var(--blur-lg) saturate(180%);
+  -webkit-backdrop-filter: var(--blur-lg) saturate(180%);
+  color: #fff;
+  padding: 14px 24px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  z-index: 10000;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  font-size: 15px;
+  font-weight: 500;
+  font-family: var(--font-family);
+  letter-spacing: -0.01em;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  max-width: 400px;
+  text-align: center;
+}
+
+.toast.show{
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+[data-theme="light"] .toast{
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--control-text);
+  border: 1px solid var(--control-border);
+}
+
+/* 新增预设背景颜色样式 */
+.preset-item.color {
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* 单色背景 */
+.preset-item.color.solid {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* 渐变背景 */
+.preset-item.color.gradient {
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+/* 悬停效果 */
+.preset-item.color:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* 视频预设样式 */
+.preset-item.video-preset .play-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  opacity: 0.9;
+}
+
+.preset-item.video-preset:hover .play-icon {
+  transform: translate(-50%, -50%) scale(1.2);
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.preset-item.video-preset .preset-name {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  color: white;
+}
+
+/* 界面设置对话框靠右显示 */
+#appearanceDialog {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  bottom: auto;
+  left: auto;
+  transform: translateY(-50%);
+  margin: 0;
+  max-height: 90vh;
+}
+
+/* 让背景透明以便预览 */
+#appearanceDialog::backdrop {
+  background: transparent;
+}

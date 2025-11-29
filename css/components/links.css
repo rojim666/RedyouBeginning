@@ -1,0 +1,581 @@
+/* 快速链接 - 苹果风格网格 */
+.links{
+  display: none !important; /* 隐藏快捷链接，除非启用桌面书签 */
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+  width: 100%;
+  max-width: 600px;
+  animation: fadeIn 0.6s cubic-bezier(0.28, 0.11, 0.32, 1) 0.3s both;
+}
+
+/* 当启用桌面书签时，使 links 区域可见并使用网格布局 */
+.links.desktop-bookmarks{
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(var(--bookmark-min-width, 140px), 1fr));
+  gap: 12px;
+  justify-content: center;
+}
+
+/* 苹果风格链接卡片 - 极简版 */
+.link-card{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 10px;
+  border-radius: 12px;
+  background: var(--card);
+  backdrop-filter: var(--blur-md) saturate(180%);
+  -webkit-backdrop-filter: var(--blur-md) saturate(180%);
+  text-decoration: none;
+  color: var(--control-text);
+  border: 1px solid var(--control-border);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.28, 0.11, 0.32, 1);
+  min-height: 80px;
+}
+
+/* 桌面书签紧凑样式 */
+.desktop-bookmarks .link-card{
+  min-width: 100px;
+  padding: 10px;
+  gap:8px;
+}
+.desktop-bookmarks .link-title{font-size:13px;font-weight:600}
+.desktop-bookmarks .link-url{font-size:11px;color:var(--muted)}
+
+.desktop-bookmark-card{
+  position: relative;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px !important;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  background: linear-gradient(135deg, var(--control-bg) 0%, rgba(255,255,255, 0.05) 100%);
+  backdrop-filter: var(--blur-md) saturate(180%);
+  -webkit-backdrop-filter: var(--blur-md) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  color: var(--text);
+  text-decoration: none;
+  min-height: 84px;
+  transition: all 0.3s cubic-bezier(0.28, 0.11, 0.32, 1);
+  gap: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  overflow: visible;
+}
+
+.desktop-bookmark-card:hover{
+  background: linear-gradient(135deg, var(--control-bg) 0%, rgba(0, 122, 255, 0.08) 100%);
+  border-color: rgba(0, 122, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.desktop-bookmark-card:active{
+  transform: translateY(-1px) scale(0.98);
+}
+
+/* 黑夜模式下的桌面书签优化 */
+[data-theme="dark"] .desktop-bookmark-card{
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .desktop-bookmark-card:hover{
+  border-color: rgba(10, 132, 255, 0.2);
+}
+
+.desktop-bookmark-content{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.desktop-bookmark-favicon{
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.desktop-bookmark-favicon img{
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* 书签编辑按钮（在卡片上悬停时显示） */
+.desktop-bookmark-card .bookmark-edit-btn{
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s;
+  z-index: 10;
+  font-size: 16px;
+}
+
+.desktop-bookmark-card:hover .bookmark-edit-btn{
+  opacity: 1;
+}
+
+.desktop-bookmark-card .bookmark-edit-btn:hover{
+  color: var(--text);
+}
+
+.desktop-bookmarks .favicon img{
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.link-card:hover{
+  background: var(--control-bg);
+  border-color: rgba(0, 122, 255, 0.3);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: var(--shadow-md);
+}
+
+.link-card:active{
+  transform: translateY(-1px) scale(0.98);
+}
+
+.link-card .favicon{
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf3 100%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 16px;
+  font-family: var(--font-family);
+  color: var(--accent);
+  border: 1px solid var(--control-border);
+  overflow: hidden;
+  position: relative;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.28, 0.11, 0.32, 1);
+  letter-spacing: -0.02em;
+}
+
+/* 首字母样式优化 */
+.link-card .favicon.initial-letter{
+  font-size: 18px;
+  font-weight: 700;
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.1) 0%, rgba(0, 122, 255, 0.05) 100%);
+  color: var(--accent);
+  border: 1.5px solid rgba(0, 122, 255, 0.2);
+}
+
+[data-theme="dark"] .link-card .favicon.initial-letter{
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.15) 0%, rgba(0, 122, 255, 0.08) 100%);
+  border-color: rgba(0, 122, 255, 0.3);
+}
+
+.link-card:hover .favicon{
+  transform: scale(1.05);
+}
+
+.link-card:hover .favicon.initial-letter{
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.15) 0%, rgba(0, 122, 255, 0.08) 100%);
+  border-color: rgba(0, 122, 255, 0.4);
+}
+
+[data-theme="dark"] .link-card:hover .favicon.initial-letter{
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.2) 0%, rgba(0, 122, 255, 0.12) 100%);
+  border-color: rgba(0, 122, 255, 0.5);
+}
+
+.link-card .favicon img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 11px;
+}
+
+.link-card .favicon.has-logo{
+  background: transparent;
+  border: none;
+}
+
+/* Logo加载动画 */
+.link-card .favicon::before{
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.6s;
+}
+
+.link-card .favicon.loading::before{
+  animation: shimmer 1.5s infinite;
+}
+
+/* 深色主题下的favicon样式 */
+[data-theme="dark"] .link-card .favicon{
+  background: linear-gradient(135deg, #2c2c2e 0%, #1c1c1e 100%);
+  color: var(--accent);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .link-card .favicon::before{
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+}
+
+.link-card .meta{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+}
+
+.link-card .title{
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--control-text);
+  letter-spacing: -0.01em;
+  margin-bottom: 2px;
+}
+
+.link-card .url{
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  opacity: 0.7;
+}
+
+/* 深色主题下的链接悬停效果 */
+[data-theme="dark"] .link-card:hover {
+  background: rgba(255,255,255,0.12);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px) scale(1.02);
+}
+
+/* 收藏夹面板 */
+.bookmarks-overlay{
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  bottom:0;
+  background:rgba(0,0,0,0.5);
+  z-index:1000;
+  backdrop-filter:blur(4px);
+  transition:opacity 0.3s ease;
+}
+
+.bookmarks-overlay.hidden{
+  opacity:0;
+  pointer-events:none;
+}
+
+.bookmarks-panel{
+  position:fixed;
+  top:0;
+  left:0;
+  width:320px;
+  height:100vh;
+  background:var(--control-bg);
+  backdrop-filter:blur(20px);
+  border-right:1px solid var(--control-border);
+  box-shadow:4px 0 20px rgba(0,0,0,0.1);
+  z-index:1001;
+  display:flex;
+  flex-direction:column;
+  transform:translateX(-100%);
+  transition:transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.bookmarks-panel:not(.hidden){
+  transform:translateX(0);
+}
+
+.bookmarks-header{
+  padding:16px 20px;
+  border-bottom:1px solid var(--control-border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.bookmarks-header h3{
+  margin:0;
+  font-size:18px;
+  color:var(--control-text);
+  font-weight:600;
+}
+
+.bookmarks-actions{
+  display:flex;
+  gap:8px;
+}
+
+.bookmarks-search{
+  padding:16px 20px;
+  border-bottom:1px solid var(--control-border);
+}
+
+.bookmarks-search input{
+  width:100%;
+  padding:8px 12px;
+  border:1px solid var(--control-border);
+  border-radius:6px;
+  background:var(--surface);
+  color:var(--control-text);
+  font-size:14px;
+}
+
+.bookmarks-search input:focus{
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 2px rgba(37,99,235,0.1);
+}
+
+.bookmarks-list{
+  flex:1;
+  overflow-y:auto;
+  padding:8px;
+}
+
+.bookmark-item{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:10px 12px;
+  border-radius:6px;
+  cursor:pointer;
+  transition:background-color 0.15s ease;
+  text-decoration:none;
+  color:var(--control-text);
+}
+
+.bookmark-item:hover{
+  background:var(--btn-bg);
+}
+
+.bookmark-icon{
+  width:20px;
+  height:20px;
+  border-radius:4px;
+  background:#f0f0f0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+  flex-shrink:0;
+}
+
+.bookmark-icon img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:4px;
+}
+
+.bookmark-content{
+  flex:1;
+  min-width:0;
+}
+
+.bookmark-title{
+  font-size:14px;
+  font-weight:500;
+  color:var(--control-text);
+  margin:0 0 2px 0;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.bookmark-url{
+  font-size:12px;
+  color:var(--muted);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.bookmark-folder{
+  background:transparent;
+  border:none;
+  width:100%;
+  text-align:left;
+  padding:10px 12px;
+  border-radius:6px;
+  cursor:pointer;
+  transition:background-color 0.15s ease;
+  color:var(--control-text);
+}
+
+.bookmark-folder:hover{
+  background:var(--btn-bg);
+}
+
+.bookmark-folder-icon{
+  margin-right:8px;
+  opacity:0.7;
+}
+
+.bookmarks-footer{
+  padding:16px 20px;
+  border-top:1px solid var(--control-border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.bookmarks-footer small{
+  color:var(--muted);
+  font-size:12px;
+}
+
+/* 深色主题适配 */
+[data-theme="dark"] .bookmark-icon{
+  background:#3a3a3a;
+  color:#fff;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px){
+  .bookmarks-panel{
+    width:280px;
+  }
+}
+
+/* 书签编辑器对话框 */
+.bookmark-editor-dialog{
+  border: none;
+  border-radius: 16px;
+  background: var(--bg);
+  color: var(--text);
+  padding: 0;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 320px;
+  width: 90vw;
+}
+
+.bookmark-editor-dialog::backdrop{
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+}
+
+.bookmark-editor{
+  padding: 24px;
+}
+
+.bookmark-editor h3{
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.editor-field{
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.editor-field label{
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.editor-field input[type="text"]{
+  padding: 8px 12px;
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+  background: var(--control-bg);
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.editor-field input[type="text"]:focus{
+  border-color: rgba(0, 122, 255, 0.6);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+  background: var(--control-bg-hover);
+}
+
+.editor-field input[type="checkbox"]{
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.editor-actions{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.editor-actions button{
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary{
+  background: #007AFF;
+  color: white;
+}
+
+.btn-primary:hover{
+  background: #0051D5;
+}
+
+.btn-primary:active{
+  transform: scale(0.98);
+}
+
+.btn-secondary{
+  background: var(--control-bg);
+  color: var(--text);
+  border: 1px solid var(--control-border);
+}
+
+.btn-secondary:hover{
+  background: var(--control-bg-hover);
+  border-color: var(--control-border-hover);
+}

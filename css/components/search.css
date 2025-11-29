@@ -1,0 +1,258 @@
+/* 搜索容器 - 苹果风格 */
+.search-container{
+  position:relative;
+  margin-top: 24px;
+  width: 100%;
+  max-width: 520px;
+  animation: fadeIn 0.6s cubic-bezier(0.28, 0.11, 0.32, 1) 0.2s both;
+  z-index: 100;
+  transition: margin-bottom 0.3s ease;
+}
+
+.search{
+  display:flex;
+  gap: 10px;
+  align-items:center; /* 改为center确保垂直对齐 */
+}
+
+/* 搜索表单内的按钮 */
+.search button[type="submit"]{
+  padding: 12px 18px;
+  min-width: auto;
+  white-space: nowrap;
+}
+
+/* 搜索输入框容器 */
+.search-input-wrapper{
+  position:relative;
+  flex:1;
+}
+
+.search input{
+  width:100%;
+  padding: 12px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--control-border);
+  min-width: 280px;
+  background: var(--control-bg);
+  backdrop-filter: var(--blur-sm) saturate(180%);
+  -webkit-backdrop-filter: var(--blur-sm) saturate(180%);
+  color: var(--control-text);
+  font-size: 16px;
+  font-weight: 400;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s cubic-bezier(0.28, 0.11, 0.32, 1);
+}
+
+.search input:hover{
+  border-color: rgba(0, 122, 255, 0.3);
+  box-shadow: var(--shadow-md);
+}
+
+.search input:focus{
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--btn-primary-shadow), var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.search input::placeholder {
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+.search select{
+  padding: 10px 32px 10px 12px; /* 缩小padding，右侧留空间给箭头 */
+  border-radius: 10px;
+  border: 1px solid var(--control-border);
+  background: var(--control-bg);
+  backdrop-filter: var(--blur-sm) saturate(180%);
+  -webkit-backdrop-filter: var(--blur-sm) saturate(180%);
+  color: var(--control-text);
+  font-size: 14px; /* 缩小字号 */
+  font-weight: 500;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s cubic-bezier(0.28, 0.11, 0.32, 1);
+  min-width: 100px; /* 限制最小宽度 */
+  max-width: 120px; /* 限制最大宽度 */
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6" viewBox="0 0 10 6"><path fill="%23007aff" d="M1 1l4 4 4-4"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.search select:hover {
+  border-color: rgba(0, 122, 255, 0.3);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.search select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--btn-primary-shadow), var(--shadow-md);
+}
+
+/* 搜索建议 */
+.search-suggestions{
+  position:absolute;
+  top:100%;
+  left:0;
+  right:0;
+  background:var(--control-bg);
+  border:1px solid var(--control-border);
+  border-top:none;
+  border-radius:0 0 8px 8px;
+  backdrop-filter:blur(10px);
+  box-shadow:0 4px 12px rgba(0,0,0,0.1);
+  max-height:300px;
+  overflow-y:auto;
+  z-index:100;
+  transition:opacity 0.2s ease, transform 0.2s ease;
+}
+
+.search-suggestions.hidden{
+  opacity:0;
+  transform:translateY(-4px);
+  pointer-events:none;
+}
+
+.search-suggestion-item{
+  padding:10px 14px;
+  border-bottom:1px solid var(--control-border);
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  transition:background-color 0.15s ease;
+}
+
+.search-suggestion-item:last-child{
+  border-bottom:none;
+}
+
+.search-suggestion-item:hover,
+.search-suggestion-item.selected{
+  background:var(--btn-bg);
+}
+
+.search-suggestion-icon{
+  width:16px;
+  height:16px;
+  opacity:0.6;
+  flex-shrink:0;
+}
+
+.search-suggestion-text{
+  flex:1;
+  font-size:14px;
+  color:var(--control-text);
+}
+
+.search-suggestion-engine{
+  font-size:12px;
+  color:var(--muted);
+  background:var(--btn-bg);
+  padding:2px 6px;
+  border-radius:4px;
+}
+
+.search-suggestion-time{
+  font-size:11px;
+  color:var(--muted);
+}
+
+/* 清空记录按钮 */
+.clear-history-btn{
+  width:100%;
+  padding:8px 14px;
+  background:transparent;
+  border:none;
+  color:var(--muted);
+  font-size:12px;
+  cursor:pointer;
+  border-top:1px solid var(--control-border);
+  transition:background-color 0.15s ease;
+}
+
+.clear-history-btn:hover{
+  background:var(--btn-bg);
+  color:var(--control-text);
+}
+
+.search-suggestions:not(.hidden) + input{
+  border-radius:8px 8px 0 0;
+}
+
+/* 搜索引擎选择框 - 苹果风格优化 */
+.search select{
+  padding: 11px 36px 11px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--control-border);
+  background: var(--control-bg);
+  color: var(--control-text);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-family);
+  letter-spacing: -0.01em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s cubic-bezier(0.28, 0.11, 0.32, 1);
+  appearance: none;
+  cursor: pointer;
+  position: relative;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+  min-width: 110px;
+}
+
+[data-theme="dark"] .search select{
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23aaa' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.search select:hover{
+  background-color: rgba(0, 122, 255, 0.04);
+  border-color: rgba(0, 122, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.search select:focus{
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+  transform: translateY(0);
+}
+
+.search select:active{
+  transform: translateY(0) scale(0.98);
+}
+
+/* 隐藏默认下拉箭头 */
+select::-ms-expand{
+  display: none;
+}
+
+/* Option 选项优化 - 注意：option样式在某些浏览器中受限 */
+.search select option{
+  padding: 12px 14px;
+  background: var(--card);
+  color: var(--control-text);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-family);
+  border-radius: 8px;
+}
+
+.search select option:hover,
+.search select option:checked{
+  background: var(--accent);
+  color: white;
+}
+
+@media (max-width:640px){
+  .search input{min-width:160px}
+}
