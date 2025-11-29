@@ -127,7 +127,7 @@
             <input id="searchInput" type="search" placeholder="搜索或输入网址" aria-label="搜索框">
             <div id="searchSuggestions" class="search-suggestions hidden"></div>
           </div>
-          <button type="submit" class="btn primary">搜索</button>
+          <button type="submit" class="btn primary search-btn">搜索</button>
         </form>
       </div>
 
@@ -258,10 +258,15 @@
   
       <div class="bg-content" style="padding: 20px;">
         <div class="appearance-section">
-          <h4 style="margin: 0 0 12px 0; font-size: 14px; color: var(--muted);">时钟</h4>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="margin: 0; font-size: 14px; color: var(--muted);">时钟</h4>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+              <input type="checkbox" id="showClockCheck" checked> 显示
+            </label>
+          </div>
           <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
             <span style="font-size: 13px; width: 60px;">大小</span>
-            <input type="range" id="clockSizeSlider" min="24" max="200" value="48" style="flex: 1;">
+            <input type="range" id="clockSizeSlider" min="24" max="300" value="48" style="flex: 1;">
             <span id="clockSizeValue" style="font-size: 13px; width: 36px; text-align: right;">48</span>
           </div>
           <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
@@ -274,10 +279,20 @@
             <input type="range" id="clockBgOpacitySlider" min="0" max="100" value="80" style="flex: 1;">
             <span id="clockBgOpacityValue" style="font-size: 13px; width: 36px; text-align: right;">80%</span>
           </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">字体颜色</span>
+            <input type="color" id="clockColorInput" value="#ffffff" style="width: 36px; height: 32px; padding: 0; border: none; background: transparent; cursor: pointer;">
+            <button id="resetClockColorBtn" class="btn small" style="padding: 4px 8px; font-size: 12px;">重置</button>
+          </div>
         </div>
   
         <div class="appearance-section" style="margin-top: 20px;">
-          <h4 style="margin: 0 0 12px 0; font-size: 14px; color: var(--muted);">问候语</h4>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="margin: 0; font-size: 14px; color: var(--muted);">问候语</h4>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+              <input type="checkbox" id="showGreetingCheck" checked> 显示
+            </label>
+          </div>
           <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
             <span style="font-size: 13px; width: 60px;">大小</span>
             <input type="range" id="greetingSizeSlider" min="12" max="48" value="16" style="flex: 1;">
@@ -293,10 +308,20 @@
             <input type="range" id="greetingBgOpacitySlider" min="0" max="100" value="80" style="flex: 1;">
             <span id="greetingBgOpacityValue" style="font-size: 13px; width: 36px; text-align: right;">80%</span>
           </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">字体颜色</span>
+            <input type="color" id="greetingColorInput" value="#ffffff" style="width: 36px; height: 32px; padding: 0; border: none; background: transparent; cursor: pointer;">
+            <button id="resetGreetingColorBtn" class="btn small" style="padding: 4px 8px; font-size: 12px;">重置</button>
+          </div>
         </div>
   
         <div class="appearance-section" style="margin-top: 20px;">
-          <h4 style="margin: 0 0 12px 0; font-size: 14px; color: var(--muted);">每日一言</h4>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="margin: 0; font-size: 14px; color: var(--muted);">每日一言</h4>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+              <input type="checkbox" id="showQuoteCheck" checked> 显示
+            </label>
+          </div>
           <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
             <span style="font-size: 13px; width: 60px;">大小</span>
             <input type="range" id="quoteSizeSlider" min="10" max="32" value="13" style="flex: 1;">
@@ -312,19 +337,48 @@
             <input type="range" id="quoteBgOpacitySlider" min="0" max="100" value="80" style="flex: 1;">
             <span id="quoteBgOpacityValue" style="font-size: 13px; width: 36px; text-align: right;">80%</span>
           </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">字体颜色</span>
+            <input type="color" id="quoteColorInput" value="#ffffff" style="width: 36px; height: 32px; padding: 0; border: none; background: transparent; cursor: pointer;">
+            <button id="resetQuoteColorBtn" class="btn small" style="padding: 4px 8px; font-size: 12px;">重置</button>
+          </div>
         </div>
 
         <div class="appearance-section" style="margin-top: 20px;">
-          <h4 style="margin: 0 0 12px 0; font-size: 14px; color: var(--muted);">搜索框</h4>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="margin: 0; font-size: 14px; color: var(--muted);">搜索框</h4>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+              <input type="checkbox" id="showSearchCheck" checked> 显示
+            </label>
+          </div>
           <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
             <span style="font-size: 13px; width: 60px;">大小</span>
-            <input type="range" id="searchSizeSlider" min="80" max="120" value="100" style="flex: 1;">
+            <input type="range" id="searchSizeSlider" min="80" max="200" value="100" style="flex: 1;">
             <span id="searchSizeValue" style="font-size: 13px; width: 36px; text-align: right;">100%</span>
           </div>
           <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
             <span style="font-size: 13px; width: 60px;">背景透明</span>
             <input type="range" id="searchBgOpacitySlider" min="0" max="100" value="72" style="flex: 1;">
             <span id="searchBgOpacityValue" style="font-size: 13px; width: 36px; text-align: right;">72%</span>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">按钮颜色</span>
+            <input type="color" id="searchBtnColorInput" value="#007aff" style="width: 36px; height: 32px; padding: 0; border: none; background: transparent; cursor: pointer;">
+            <button id="resetSearchBtnColorBtn" class="btn small" style="padding: 4px 8px; font-size: 12px;">重置</button>
+          </div>
+        </div>
+
+        <div class="appearance-section" style="margin-top: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="margin: 0; font-size: 14px; color: var(--muted);">桌面书签</h4>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+              <input type="checkbox" id="showBookmarksCheck" checked> 显示
+            </label>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">书签大小</span>
+            <input type="range" id="bookmarkSizeSlider" min="80" max="200" value="140" style="flex: 1;">
+            <span id="bookmarkSizeValue" style="font-size: 13px; width: 36px; text-align: right;">140</span>
           </div>
         </div>
       </div>

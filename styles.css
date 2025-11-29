@@ -310,6 +310,7 @@ body{
   max-width: 520px;
   animation: fadeIn 0.6s cubic-bezier(0.28, 0.11, 0.32, 1) 0.2s both;
   z-index: 100;
+  transition: margin-bottom 0.3s ease;
 }
 
 .search{
@@ -578,7 +579,7 @@ select::-ms-expand{
   display: none !important; /* 隐藏快捷链接，除非启用桌面书签 */
   grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   gap: 12px;
-  margin-top: 24px;
+  margin-top: 12px;
   width: 100%;
   max-width: 600px;
   animation: fadeIn 0.6s cubic-bezier(0.28, 0.11, 0.32, 1) 0.3s both;
@@ -587,8 +588,9 @@ select::-ms-expand{
 /* 当启用桌面书签时，使 links 区域可见并使用网格布局 */
 .links.desktop-bookmarks{
   display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(var(--bookmark-min-width, 140px), 1fr));
   gap: 12px;
+  justify-content: center;
 }
 
 /* 苹果风格链接卡片 - 极简版 */
@@ -626,7 +628,7 @@ select::-ms-expand{
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 12px !important;
+  padding: 8px !important;
   font-size: 13px;
   font-weight: 500;
   text-align: center;
@@ -637,7 +639,7 @@ select::-ms-expand{
   border-radius: 12px;
   color: var(--text);
   text-decoration: none;
-  min-height: 100px;
+  min-height: 84px;
   transition: all 0.3s cubic-bezier(0.28, 0.11, 0.32, 1);
   gap: 0;
   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
@@ -1230,7 +1232,8 @@ dialog::backdrop{
   background:rgba(255,255,255,0.05);
 }
 
-.bg-dialog{max-width:560px;width:90vw;border:none;border-radius:12px;background:var(--control-bg);color:var(--control-text);box-shadow:0 18px 50px rgba(2,6,23,0.28);overflow:hidden}
+.bg-dialog{max-width:560px;width:90vw;border:none;border-radius:12px;background:var(--control-bg);color:var(--control-text);box-shadow:0 18px 50px rgba(2,6,23,0.28);overflow:hidden;max-height:85vh}
+.bg-dialog[open]{display:flex;flex-direction:column}
 .bg-dialog::backdrop{background:rgba(0,0,0,0.36);backdrop-filter:blur(4px)}
 
 /* Edit links dialog: remove default black border and make it match bg-dialog style */
@@ -1341,7 +1344,7 @@ dialog#editDialog::backdrop{
     opacity:1;
   }
 }
-.bg-form{padding:0;display:flex;flex-direction:column;gap:0}
+.bg-form{padding:0;display:flex;flex-direction:column;gap:0;height:100%;overflow:hidden}
 .bg-header{display:flex;justify-content:space-between;align-items:center;padding:20px 20px 0;border-bottom:1px solid var(--control-border);margin-bottom:16px}
 .bg-header h3{margin:0}
 .close-btn{background:transparent;border:0;font-size:20px;cursor:pointer;color:var(--muted);padding:4px}
@@ -1351,7 +1354,7 @@ dialog#editDialog::backdrop{
 .tab-btn:hover{background:rgba(0,0,0,0.04)}
 .tab-btn.active{color:var(--accent);background:rgba(37,99,235,0.06);box-shadow:0 6px 18px rgba(37,99,235,0.06)}
 
-.bg-content{padding:20px;min-height:280px}
+.bg-content{padding:20px;min-height:280px;overflow-y:auto;flex:1}
 .tab-panel{display:none}
 .tab-panel.active{display:block}
 
