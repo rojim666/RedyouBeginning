@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>红柚起始页</title>
   <link rel="stylesheet" href="styles.css">
-  <!-- Add favicon link -->
-  <link rel="icon" type="image/svg+xml" href="_logo.svg">
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="icon.png">
 </head>
 <body>
   <main class="container">
@@ -137,6 +137,7 @@
     </section>
 
     <footer class="footer">
+      <img src="icon.png" alt="Logo" class="footer-logo">
       <small>红柚起始页 made with rojim</small>
     </footer>
   </main>
@@ -247,6 +248,94 @@
       </div>
     </form>
   </dialog>
+
+  <dialog id="appearanceDialog" class="bg-dialog">
+    <form method="dialog" class="bg-form">
+      <header class="bg-header">
+        <h3>界面设置</h3>
+        <button id="cancelAppearanceBtn" type="button" class="close-btn" aria-label="关闭">×</button>
+      </header>
+  
+      <div class="bg-content" style="padding: 20px;">
+        <div class="appearance-section">
+          <h4 style="margin: 0 0 12px 0; font-size: 14px; color: var(--muted);">时钟</h4>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">大小</span>
+            <input type="range" id="clockSizeSlider" min="24" max="200" value="48" style="flex: 1;">
+            <span id="clockSizeValue" style="font-size: 13px; width: 36px; text-align: right;">48</span>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">文字透明</span>
+            <input type="range" id="clockTextOpacitySlider" min="0" max="100" value="100" style="flex: 1;">
+            <span id="clockTextOpacityValue" style="font-size: 13px; width: 36px; text-align: right;">100%</span>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">背景透明</span>
+            <input type="range" id="clockBgOpacitySlider" min="0" max="100" value="80" style="flex: 1;">
+            <span id="clockBgOpacityValue" style="font-size: 13px; width: 36px; text-align: right;">80%</span>
+          </div>
+        </div>
+  
+        <div class="appearance-section" style="margin-top: 20px;">
+          <h4 style="margin: 0 0 12px 0; font-size: 14px; color: var(--muted);">问候语</h4>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">大小</span>
+            <input type="range" id="greetingSizeSlider" min="12" max="48" value="16" style="flex: 1;">
+            <span id="greetingSizeValue" style="font-size: 13px; width: 36px; text-align: right;">16</span>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">文字透明</span>
+            <input type="range" id="greetingTextOpacitySlider" min="0" max="100" value="100" style="flex: 1;">
+            <span id="greetingTextOpacityValue" style="font-size: 13px; width: 36px; text-align: right;">100%</span>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">背景透明</span>
+            <input type="range" id="greetingBgOpacitySlider" min="0" max="100" value="80" style="flex: 1;">
+            <span id="greetingBgOpacityValue" style="font-size: 13px; width: 36px; text-align: right;">80%</span>
+          </div>
+        </div>
+  
+        <div class="appearance-section" style="margin-top: 20px;">
+          <h4 style="margin: 0 0 12px 0; font-size: 14px; color: var(--muted);">每日一言</h4>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">大小</span>
+            <input type="range" id="quoteSizeSlider" min="10" max="32" value="13" style="flex: 1;">
+            <span id="quoteSizeValue" style="font-size: 13px; width: 36px; text-align: right;">13</span>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">文字透明</span>
+            <input type="range" id="quoteTextOpacitySlider" min="0" max="100" value="85" style="flex: 1;">
+            <span id="quoteTextOpacityValue" style="font-size: 13px; width: 36px; text-align: right;">85%</span>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">背景透明</span>
+            <input type="range" id="quoteBgOpacitySlider" min="0" max="100" value="80" style="flex: 1;">
+            <span id="quoteBgOpacityValue" style="font-size: 13px; width: 36px; text-align: right;">80%</span>
+          </div>
+        </div>
+
+        <div class="appearance-section" style="margin-top: 20px;">
+          <h4 style="margin: 0 0 12px 0; font-size: 14px; color: var(--muted);">搜索框</h4>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">大小</span>
+            <input type="range" id="searchSizeSlider" min="80" max="120" value="100" style="flex: 1;">
+            <span id="searchSizeValue" style="font-size: 13px; width: 36px; text-align: right;">100%</span>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">背景透明</span>
+            <input type="range" id="searchBgOpacitySlider" min="0" max="100" value="72" style="flex: 1;">
+            <span id="searchBgOpacityValue" style="font-size: 13px; width: 36px; text-align: right;">72%</span>
+          </div>
+        </div>
+      </div>
+  
+      <div class="bg-actions">
+        <button id="resetAppearanceBtn" type="button" class="btn secondary">重置</button>
+        <button id="saveAppearanceBtn" type="button" class="btn primary">完成</button>
+      </div>
+    </form>
+  </dialog>
+
 
   <!-- 收藏夹侧边栏 -->
   <div id="bookmarksPanel" class="bookmarks-panel hidden">
@@ -696,6 +785,13 @@
         <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       <span>收藏夹</span>
+    </button>
+    <button id="panelAppearanceBtn" class="settings-panel-item">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>界面设置</span>
     </button>
   </div>
 

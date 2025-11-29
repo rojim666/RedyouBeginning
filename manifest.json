@@ -17,12 +17,17 @@
     "newtab": "index.html"
   },
   "icons": {
-    "16": "_logo.svg",
-    "48": "_logo.svg",
-    "128": "_logo.svg"
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
   },
   "action": {
-    "default_title": "红柚起始页"
+    "default_title": "红柚起始页",
+    "default_icon": {
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    }
   },
   "background": {
     "service_worker": "background.js"
@@ -32,7 +37,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["music/*"],
+      "resources": ["music/*", "icon.png", "logo.svg"],
       "matches": ["<all_urls>"]
     }
   ]
