@@ -255,8 +255,69 @@ function getCachedElement(selector) {
 // state
 let links = [];
 
+// 默认书签数据
+const defaultBookmarks = [
+  {
+    "id": 1764336893197.6904,
+    "title": "深圳技术大学OA系统",
+    "url": "https://home.sztu.edu.cn/bmportal/index.portal",
+    "folder": "imported",
+    "favicon": "https://www.google.com/s2/favicons?domain=home.sztu.edu.cn&sz=64",
+    "visible": true,
+    "showLogo": false,
+    "timestamp": 1764336893197
+  },
+  {
+    "id": 1764336893197.658,
+    "title": "数据结构课程组",
+    "url": "https://acm-sztu-edu-cn-40080-p.webvpn.sztu.edu.cn:8118/course/index",
+    "folder": "imported",
+    "favicon": "https://www.google.com/s2/favicons?domain=acm-sztu-edu-cn-40080-p.webvpn.sztu.edu.cn&sz=64",
+    "visible": true,
+    "showLogo": false,
+    "timestamp": 1764336893197
+  },
+  {
+    "id": 1764336893197.5527,
+    "title": "深圳技术大学信息中心公文通",
+    "url": "https://nbw.sztu.edu.cn/",
+    "folder": "imported",
+    "favicon": "https://www.google.com/s2/favicons?domain=nbw.sztu.edu.cn&sz=64",
+    "visible": true,
+    "showLogo": false,
+    "timestamp": 1764336893197
+  },
+  {
+    "id": 1764336893197.1243,
+    "title": "教务系统",
+    "url": "https://auth.sztu.edu.cn/idp/authcenter/ActionAuthChain?entityId=jiaowu",
+    "folder": "imported",
+    "favicon": "https://www.google.com/s2/favicons?domain=auth.sztu.edu.cn&sz=64",
+    "visible": true,
+    "showLogo": false,
+    "timestamp": 1764336893197
+  },
+  {
+    "id": 1764336893197.946,
+    "title": "豆包",
+    "url": "https://www.doubao.com/chat/",
+    "folder": "imported",
+    "favicon": "https://www.google.com/s2/favicons?domain=www.doubao.com&sz=64",
+    "visible": true,
+    "showLogo": true,
+    "timestamp": 1764336893197
+  }
+];
+
 // 收藏夹管理
 let bookmarks = JSON.parse(localStorage.getItem('startpage.bookmarks') || '[]');
+
+// 如果书签为空，加载默认书签
+if (bookmarks.length === 0) {
+  bookmarks = JSON.parse(JSON.stringify(defaultBookmarks));
+  localStorage.setItem('startpage.bookmarks', JSON.stringify(bookmarks));
+}
+
 // 迁移：确保所有书签都有 visible 和 showLogo 字段
 bookmarks = bookmarks.map(b => ({ 
   ...b, 
@@ -1311,10 +1372,8 @@ function renderBookmarks(searchTerm = '') {
   const fragment = document.createDocumentFragment();
   
   filtered.forEach(bookmark => {
-    const item = document.createElement('a');
+    const item = document.createElement('div');
     item.className = 'bookmark-item';
-    item.href = bookmark.url;
-    item.target = '_blank';
     item.dataset.bookmarkId = bookmark.id; // 存储 ID 便于事件委托
     
     // 如果书签隐藏，添加样式但保持可交互
@@ -1332,11 +1391,13 @@ function renderBookmarks(searchTerm = '') {
     }
     
     item.innerHTML = `
-      ${iconHTML}
-      <div class="bookmark-content">
-        <div class="bookmark-title">${escapeHtml(bookmark.title)}</div>
-        <div class="bookmark-url">${escapeHtml(bookmark.url)}</div>
-      </div>
+      <a href="${bookmark.url}" target="_blank" class="bookmark-link-content" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;text-decoration:none;color:inherit;">
+        ${iconHTML}
+        <div class="bookmark-content">
+          <div class="bookmark-title">${escapeHtml(bookmark.title)}</div>
+          <div class="bookmark-url">${escapeHtml(bookmark.url)}</div>
+        </div>
+      </a>
       <button class="icon-btn visibility-btn" type="button" style="opacity:0;" title="${bookmark.visible !== false ? '隐藏书签' : '显示书签'}" data-action="toggle-visibility">
         ${bookmark.visible !== false ? `
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1372,8 +1433,7 @@ function renderBookmarks(searchTerm = '') {
 
   container.appendChild(fragment);
   
-  // 使用事件委托处理按钮点击
-  container.addEventListener('click', handleBookmarkActions, true);
+  // 使用事件委托处理按钮点击 - 已移动到初始化函数中，避免重复绑定
 }
 
 // 事件委托处理书签列表中的所有按钮操作
@@ -1384,7 +1444,8 @@ function handleBookmarkActions(e) {
   const item = e.target.closest('.bookmark-item');
   if (!item) return;
   
-  const bookmarkId = parseInt(item.dataset.bookmarkId);
+  // 使用 Number 而不是 parseInt，因为 id 可能是浮点数 (Date.now() + Math.random())
+  const bookmarkId = Number(item.dataset.bookmarkId);
   const bookmark = bookmarks.find(b => b.id === bookmarkId);
   if (!bookmark) return;
   
@@ -2047,11 +2108,21 @@ const presetBackgrounds = [
     { id: 'solid4', name: '深红', type: 'color', value: '#7f1d1d' }
 ];
 
+// 预设高清动态壁纸（视频背景）
 const presetVideos = [
-  { id: 'video1', name: '请在自定义里自己上传', type: 'video', value: 'video/上杉绘梨衣.mp4', thumbnail: 'video/上杉绘梨衣.mp4' },
-
+    { id: 'video1', name: '上杉绘梨衣', type: 'video', value: 'video/上杉绘梨衣.mp4', thumbnail: 'video/上杉绘梨衣.mp4' },
+    { id: 'video_elaina1', name: '伊蕾娜1', type: 'video', value: 'video/伊蕾娜1.mp4', thumbnail: 'video/伊蕾娜1.mp4' },
+    { id: 'video_elaina2', name: '伊蕾娜2', type: 'video', value: 'video/伊蕾娜2.mp4', thumbnail: 'video/伊蕾娜2.mp4' },
+    { id: 'video_elaina3', name: '伊蕾娜3', type: 'video', value: 'video/伊蕾娜3.mp4', thumbnail: 'video/伊蕾娜3.mp4' },
+    { id: 'video_keqing', name: '刻晴', type: 'video', value: 'video/刻晴.mp4', thumbnail: 'video/刻晴.mp4' },
+    { id: 'video_xi', name: '囍', type: 'video', value: 'video/囍.mp4', thumbnail: 'video/囍.mp4' },
+    { id: 'video3', name: '心海', type: 'video', value: 'video/心海.mp4', thumbnail: 'video/心海.mp4' },
+    { id: 'video_jiangnan', name: '江南烧酒', type: 'video', value: 'video/江南烧酒.mp4', thumbnail: 'video/江南烧酒.mp4' },
+    { id: 'video4', name: '藿藿', type: 'video', value: 'video/藿藿.mp4', thumbnail: 'video/藿藿.mp4' },
+    { id: 'video5', name: '胡桃', type: 'video', value: 'video/胡桃.mp4', thumbnail: 'video/胡桃.mp4' },
+    { id: 'video_witch', name: '魔女', type: 'video', value: 'video/魔女.mp4', thumbnail: 'video/魔女.mp4' },
+    { id: 'video_luming', name: '鹿鸣', type: 'video', value: 'video/鹿鸣.mp4', thumbnail: 'video/鹿鸣.mp4' }
 ];
-
 
 // 新增预设背景颜色数据
 const presetColors = [
@@ -2225,6 +2296,7 @@ function selectPresetBackground(bg) {
     
     showToast(`已应用${bg.name}背景`);
     closeBackgroundDialog();
+    setTimeout(() => location.reload(), 500);
 }
 
 function resetCustomUpload() {
@@ -2243,6 +2315,7 @@ function resetBackground() {
     localStorage.removeItem('startpage.bgType');
     showToast('背景已重置');
     closeBackgroundDialog();
+    setTimeout(() => location.reload(), 500);
 }
 
 function applyBackground(color) {
@@ -2845,9 +2918,9 @@ async function processVideoFile(file) {
         localStorage.setItem('startpage.bg', 'INDEXED_DB_VIDEO');
         console.log('✅ localStorage标记已设置: INDEXED_DB_VIDEO');
         
-        closeBackgroundDialog();
         showToast('✅ 视频背景已应用并永久保存');
         console.log('✅ 完整保存流程成功！');
+        setTimeout(() => location.reload(), 500);
         
     } catch (error) {
         console.error('❌ 视频处理失败:', error);
@@ -2908,10 +2981,10 @@ function processImageFile(file) {
                 saveBackgroundToDB(currentBg, currentBgType).catch(err => {
                     console.warn('备份到IndexedDB失败:', err);
                 });
-                
                 closeBackgroundDialog();
                 showToast('自定义背景已应用并保存 ✓');
                 console.log('背景已成功保存到localStorage');
+                setTimeout(() => location.reload(), 500);
                 
             } catch (error) {
                 if (error.name === 'QuotaExceededError') {
@@ -2920,9 +2993,9 @@ function processImageFile(file) {
                     // localStorage满了，尝试IndexedDB
                     try {
                         await saveBackgroundToDB(currentBg, currentBgType);
-                        localStorage.setItem('startpage.bgType', currentBgType);
                         closeBackgroundDialog();
                         showToast('背景已应用并保存到IndexedDB ✓');
+                        setTimeout(() => location.reload(), 500);
                     } catch (dbError) {
                         console.error('IndexedDB也保存失败，尝试更高压缩率...');
                         
@@ -3002,12 +3075,11 @@ function handleUrlBackground() {
         // 异步保存到IndexedDB（不等待）
         saveBackgroundToDB(currentBg, currentBgType).catch(err => {
             console.warn('保存到IndexedDB失败（URL背景已在localStorage）:', err);
-        });
-        
         closeBackgroundDialog();
         showToast(isVideo ? '视频背景已应用并保存 ✓' : '背景已应用并保存 ✓');
         console.log('URL背景已保存:', url);
-        
+        setTimeout(() => location.reload(), 500);
+        });
     } catch (error) {
         console.error('保存URL背景失败:', error);
         showToast('应用背景失败: ' + error.message);
@@ -3146,6 +3218,8 @@ function initSettingsPanel() {
   const panelSoundBtn = $('#panelSoundBtn');
   const panelFocusBtn = $('#panelFocusBtn');
   const panelBgBtn = $('#panelBgBtn');
+  const panelBookmarksBtn = $('#panelBookmarksBtn');
+  const panelAppearanceBtn = $('#panelAppearanceBtn');
   
   if (panelSoundBtn) {
     panelSoundBtn.addEventListener('click', (e) => {
@@ -3169,6 +3243,20 @@ function initSettingsPanel() {
     panelBgBtn.addEventListener('click', () => {
       settingsPanel.classList.remove('show');
       openBackgroundDialog();
+    });
+  }
+
+  if (panelBookmarksBtn) {
+    panelBookmarksBtn.addEventListener('click', () => {
+      settingsPanel.classList.remove('show');
+      toggleBookmarksPanel();
+    });
+  }
+
+  if (panelAppearanceBtn) {
+    panelAppearanceBtn.addEventListener('click', () => {
+      settingsPanel.classList.remove('show');
+      document.getElementById('appearanceDialog').showModal();
     });
   }
 }
@@ -3509,6 +3597,8 @@ function initSoundPanel() {
   const musicIdInput = document.getElementById('musicIdInput');
   const loadMusicBtn = document.getElementById('loadMusicBtn');
   const musicHelpBtn = document.getElementById('musicHelpBtn');
+  const musicSettingsBtn = document.getElementById('musicSettingsBtn');
+  const saveMusicSettingsBtn = document.getElementById('saveMusicSettingsBtn');
   
   if (musicIdInput && loadMusicBtn) {
       // 加载保存的 ID
@@ -3543,6 +3633,54 @@ function initSoundPanel() {
       if (musicHelpBtn) {
           musicHelpBtn.addEventListener('click', () => {
               alert('如何获取歌单ID：\n\n1. 打开网易云音乐官网或客户端\n2. 进入你喜欢的歌单\n3. 复制链接 (例如: .../playlist?id=123456)\n4. 直接粘贴链接到输入框，点击加载即可\n\n提示：也可以直接输入 id 数字');
+          });
+      }
+      
+      // 音乐设置按钮
+      if (musicSettingsBtn) {
+          musicSettingsBtn.addEventListener('click', () => {
+              const dialog = document.getElementById('musicSettingsDialog');
+              const apiInput = document.getElementById('customMusicApiInput');
+              const cookieInput = document.getElementById('musicCookieInput');
+              
+              // 加载保存的设置
+              apiInput.value = localStorage.getItem('startpage.musicApi') || '';
+              cookieInput.value = localStorage.getItem('startpage.musicCookie') || '';
+              
+              dialog.showModal();
+          });
+      }
+      
+      // 保存音乐设置
+      if (saveMusicSettingsBtn) {
+          saveMusicSettingsBtn.addEventListener('click', () => {
+              const apiInput = document.getElementById('customMusicApiInput');
+              const cookieInput = document.getElementById('musicCookieInput');
+              
+              const api = apiInput.value.trim();
+              const cookie = cookieInput.value.trim();
+              
+              if (api) {
+                  localStorage.setItem('startpage.musicApi', api);
+              } else {
+                  localStorage.removeItem('startpage.musicApi');
+              }
+              
+              if (cookie) {
+                  localStorage.setItem('startpage.musicCookie', cookie);
+              } else {
+                  localStorage.removeItem('startpage.musicCookie');
+              }
+              
+              showToast('音乐设置已保存');
+              document.getElementById('musicSettingsDialog').close();
+              
+              // 如果有正在播放的歌单，提示重新加载
+              if (musicIdInput.value) {
+                  if (confirm('设置已更新，是否重新加载歌单？')) {
+                      loadNeteaseMusic(musicIdInput.value);
+                  }
+              }
           });
       }
   }
@@ -3617,6 +3755,7 @@ let musicState = {
     playlist: [],
     currentIndex: 0,
     isPlaying: false,
+    playMode: 'sequence', // sequence, single, random
     audio: null,
     duration: 0,
     currentTime: 0
@@ -3627,7 +3766,60 @@ async function fetchNeteaseMusicList(id) {
     try {
         console.log('尝试加载歌单ID:', id);
         
-        // 方案1: 使用 Meting API (支持 CORS，稳定性好)
+        // 检查是否有自定义 API 和 Cookie
+        const customApi = localStorage.getItem('startpage.musicApi');
+        const customCookie = localStorage.getItem('startpage.musicCookie');
+        
+        if (customApi) {
+            console.log('使用自定义 API:', customApi);
+            // 使用自定义 NeteaseCloudMusicApi
+            // 格式通常是 /playlist/detail?id=xxx 获取歌单详情，然后 /song/url?id=xxx 获取链接
+            // 但为了兼容 Meting 格式，我们假设用户可能使用的是兼容 Meting 的 API，或者我们需要自己适配
+            
+            // 如果用户填的是标准 NeteaseCloudMusicApi (Binaryify版)
+            // 我们需要先获取歌单详情，再获取歌曲详情
+            
+            // 1. 获取歌单详情
+            let playlistUrl = `${customApi}/playlist/track/all?id=${id}&limit=1000&offset=0`;
+            if (customCookie) {
+                // 只有在 HTTPS 下才能安全发送 Cookie，或者用户自建 API 允许跨域携带凭证
+                // 这里我们尝试通过 query 参数传递 cookie (部分部署支持) 或者 xhr withCredentials
+                // 标准 NeteaseCloudMusicApi 支持 ?cookie=xxx
+                playlistUrl += `&cookie=${encodeURIComponent(customCookie)}`;
+            }
+            
+            const response = await fetch(playlistUrl);
+            if (!response.ok) throw new Error(`自定义 API HTTP ${response.status}`);
+            
+            const data = await response.json();
+            
+            if (data.songs && Array.isArray(data.songs)) {
+                // 2. 获取歌曲 URL (需要批量获取)
+                const trackIds = data.songs.map(s => s.id).join(',');
+                let songUrlApi = `${customApi}/song/url?id=${trackIds}`;
+                if (customCookie) songUrlApi += `&cookie=${encodeURIComponent(customCookie)}`;
+                
+                const urlResponse = await fetch(songUrlApi);
+                const urlData = await urlResponse.json();
+                const urlMap = {};
+                if (urlData.data) {
+                    urlData.data.forEach(u => urlMap[u.id] = u.url);
+                }
+                
+                return data.songs.map(track => ({
+                    id: track.id,
+                    name: track.name,
+                    artist: track.ar ? track.ar.map(a => a.name).join('/') : '未知歌手',
+                    album: track.al ? track.al.name : '未知专辑',
+                    duration: track.dt,
+                    url: urlMap[track.id], // 可能为空(VIP)
+                    cover: track.al ? track.al.picUrl : null,
+                    lrc: null // 歌词暂不获取
+                })).filter(t => t.url); // 过滤掉没有 URL 的歌曲
+            }
+        }
+        
+        // 默认方案: 使用 Meting API (支持 CORS，稳定性好)
         // 这是一个常用的公共 API，专门用于解析网易云音乐链接
         const apiUrl = `https://api.i-meto.com/meting/api?server=netease&type=playlist&id=${id}`;
         
@@ -3797,6 +3989,25 @@ function renderMusicPlayer(container) {
             
             <!-- 控制按钮 -->
             <div class="music-controls">
+                <button id="musicModeBtn" class="music-btn" title="顺序播放">
+                    <!-- 顺序播放图标 -->
+                    <svg id="iconSequence" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17 1l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M21 13v2a4 4 0 01-4 4H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <!-- 单曲循环图标 -->
+                    <svg id="iconSingle" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+                        <path d="M17 1l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M21 13v2a4 4 0 01-4 4H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <text x="10" y="17" font-size="8" fill="currentColor" font-weight="bold">1</text>
+                    </svg>
+                    <!-- 随机播放图标 -->
+                    <svg id="iconRandom" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+                        <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l5 5M4 4l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
                 <button id="musicPrevBtn" class="music-btn" title="上一首">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M19 20L9 12l10-8v16zM5 19V5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -3928,12 +4139,60 @@ function bindMusicPlayerEvents() {
     const playBtn = document.getElementById('musicPlayBtn');
     const prevBtn = document.getElementById('musicPrevBtn');
     const nextBtn = document.getElementById('musicNextBtn');
+    const modeBtn = document.getElementById('musicModeBtn');
     const progressBar = document.getElementById('musicProgressBar');
     
     if (playBtn) playBtn.addEventListener('click', toggleMusicPlay);
     if (prevBtn) prevBtn.addEventListener('click', previousMusic);
-    if (nextBtn) nextBtn.addEventListener('click', nextMusic);
+    if (nextBtn) nextBtn.addEventListener('click', () => nextMusic(true)); // 手动点击下一首
+    if (modeBtn) modeBtn.addEventListener('click', togglePlayMode);
     if (progressBar) progressBar.addEventListener('input', seekMusic);
+}
+
+// 切换播放模式
+function togglePlayMode() {
+    const modes = ['sequence', 'single', 'random'];
+    const nextIndex = (modes.indexOf(musicState.playMode) + 1) % modes.length;
+    musicState.playMode = modes[nextIndex];
+    updatePlayModeUI();
+    
+    const modeNames = {
+        'sequence': '顺序播放',
+        'single': '单曲循环',
+        'random': '随机播放'
+    };
+    showToast(`已切换到${modeNames[musicState.playMode]}`);
+}
+
+// 更新播放模式UI
+function updatePlayModeUI() {
+    const btn = document.getElementById('musicModeBtn');
+    const iconSequence = document.getElementById('iconSequence');
+    const iconSingle = document.getElementById('iconSingle');
+    const iconRandom = document.getElementById('iconRandom');
+    
+    if (!btn) return;
+    
+    // 隐藏所有图标
+    if(iconSequence) iconSequence.style.display = 'none';
+    if(iconSingle) iconSingle.style.display = 'none';
+    if(iconRandom) iconRandom.style.display = 'none';
+    
+    // 显示当前模式图标
+    switch (musicState.playMode) {
+        case 'sequence':
+            if(iconSequence) iconSequence.style.display = 'block';
+            btn.title = '顺序播放';
+            break;
+        case 'single':
+            if(iconSingle) iconSingle.style.display = 'block';
+            btn.title = '单曲循环';
+            break;
+        case 'random':
+            if(iconRandom) iconRandom.style.display = 'block';
+            btn.title = '随机播放';
+            break;
+    }
 }
 
 // 播放/暂停音乐
@@ -3994,7 +4253,7 @@ function playMusic() {
         document.getElementById('musicDuration').textContent = formatTime(musicState.duration);
     });
     
-    musicState.audio.addEventListener('ended', nextMusic);
+    musicState.audio.addEventListener('ended', () => nextMusic(false));
     
     musicState.audio.addEventListener('error', (e) => {
         console.warn('播放出错:', e);
@@ -4035,17 +4294,47 @@ function pauseMusic() {
 function previousMusic() {
     if (musicState.playlist.length === 0) return;
     
-    musicState.currentIndex = (musicState.currentIndex - 1 + musicState.playlist.length) % musicState.playlist.length;
+    if (musicState.playMode === 'random') {
+        // 随机模式下上一首也随机
+        let newIndex = musicState.currentIndex;
+        while (newIndex === musicState.currentIndex && musicState.playlist.length > 1) {
+            newIndex = Math.floor(Math.random() * musicState.playlist.length);
+        }
+        musicState.currentIndex = newIndex;
+    } else {
+        // 顺序或单曲循环模式（手动切歌时单曲循环也切到上一首）
+        musicState.currentIndex = (musicState.currentIndex - 1 + musicState.playlist.length) % musicState.playlist.length;
+    }
+    
     updateMusicDisplay();
     updateMusicPlaylistUI();
     playMusic();
 }
 
 // 下一首
-function nextMusic() {
+function nextMusic(isManual = false) {
     if (musicState.playlist.length === 0) return;
     
-    musicState.currentIndex = (musicState.currentIndex + 1) % musicState.playlist.length;
+    if (musicState.playMode === 'single' && !isManual) {
+        // 单曲循环且非手动切换，保持当前索引
+        // 重新播放当前歌曲
+        musicState.audio.currentTime = 0;
+        musicState.audio.play();
+        return;
+    }
+    
+    if (musicState.playMode === 'random') {
+        // 随机模式
+        let newIndex = musicState.currentIndex;
+        while (newIndex === musicState.currentIndex && musicState.playlist.length > 1) {
+            newIndex = Math.floor(Math.random() * musicState.playlist.length);
+        }
+        musicState.currentIndex = newIndex;
+    } else {
+        // 顺序模式
+        musicState.currentIndex = (musicState.currentIndex + 1) % musicState.playlist.length;
+    }
+    
     updateMusicDisplay();
     updateMusicPlaylistUI();
     playMusic();
@@ -4540,8 +4829,201 @@ function updateFocusOpacity(opacity) {
   }
 }
 
+// ==================== 界面外观设置 ====================
+function initAppearanceSettings() {
+  const appearanceDialog = document.getElementById('appearanceDialog');
+  const cancelBtn = document.getElementById('cancelAppearanceBtn');
+  const saveBtn = document.getElementById('saveAppearanceBtn');
+  const resetBtn = document.getElementById('resetAppearanceBtn');
+  
+  if (!appearanceDialog) return;
+  
+  // 默认设置
+  const defaults = {
+    clockSize: 48,
+    clockTextOpacity: 100,
+    clockBgOpacity: 80,
+    greetingSize: 16,
+    greetingTextOpacity: 100,
+    greetingBgOpacity: 80,
+    quoteSize: 13,
+    quoteTextOpacity: 85,
+    quoteBgOpacity: 80,
+    searchSize: 100,
+    searchBgOpacity: 72
+  };
+  
+  // 获取当前设置 (合并默认值以处理新字段)
+  let saved = JSON.parse(localStorage.getItem('startpage.appearance') || '{}');
+  let settings = { ...defaults, ...saved };
+  
+  // 元素引用
+  const elements = {
+    clock: document.getElementById('clock'),
+    greeting: document.getElementById('greeting'),
+    quote: document.getElementById('quote'),
+    quoteText: document.getElementById('quoteText'),
+    quoteAuthor: document.getElementById('quoteAuthor'),
+    searchInput: document.querySelector('.search input'),
+    searchContainer: document.querySelector('.search-container')
+  };
+  
+  // 滑块引用
+  const sliders = {
+    clockSize: document.getElementById('clockSizeSlider'),
+    clockTextOpacity: document.getElementById('clockTextOpacitySlider'),
+    clockBgOpacity: document.getElementById('clockBgOpacitySlider'),
+    greetingSize: document.getElementById('greetingSizeSlider'),
+    greetingTextOpacity: document.getElementById('greetingTextOpacitySlider'),
+    greetingBgOpacity: document.getElementById('greetingBgOpacitySlider'),
+    quoteSize: document.getElementById('quoteSizeSlider'),
+    quoteTextOpacity: document.getElementById('quoteTextOpacitySlider'),
+    quoteBgOpacity: document.getElementById('quoteBgOpacitySlider'),
+    searchSize: document.getElementById('searchSizeSlider'),
+    searchBgOpacity: document.getElementById('searchBgOpacitySlider')
+  };
+  
+  // 值显示引用
+  const values = {
+    clockSize: document.getElementById('clockSizeValue'),
+    clockTextOpacity: document.getElementById('clockTextOpacityValue'),
+    clockBgOpacity: document.getElementById('clockBgOpacityValue'),
+    greetingSize: document.getElementById('greetingSizeValue'),
+    greetingTextOpacity: document.getElementById('greetingTextOpacityValue'),
+    greetingBgOpacity: document.getElementById('greetingBgOpacityValue'),
+    quoteSize: document.getElementById('quoteSizeValue'),
+    quoteTextOpacity: document.getElementById('quoteTextOpacityValue'),
+    quoteBgOpacity: document.getElementById('quoteBgOpacityValue'),
+    searchSize: document.getElementById('searchSizeValue'),
+    searchBgOpacity: document.getElementById('searchBgOpacityValue')
+  };
+  
+  // 应用设置到DOM
+  function applySettings(newSettings) {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const baseColor = isDark ? '28, 28, 30' : '255, 255, 255';
+    
+    // 时钟
+    if (elements.clock) {
+      elements.clock.style.fontSize = `${newSettings.clockSize}px`;
+      // 文字透明度
+      elements.clock.style.color = `color-mix(in srgb, var(--text), transparent ${100 - newSettings.clockTextOpacity}%)`;
+      // 背景透明度
+      elements.clock.style.background = `linear-gradient(135deg, rgba(${baseColor}, ${newSettings.clockBgOpacity/100}) 0%, rgba(255,255,255, 0.05) 100%)`;
+      // 移除旧的 opacity 设置
+      elements.clock.style.opacity = '';
+    }
+    
+    // 问候语
+    if (elements.greeting) {
+      elements.greeting.style.fontSize = `${newSettings.greetingSize}px`;
+      elements.greeting.style.color = `color-mix(in srgb, var(--text), transparent ${100 - newSettings.greetingTextOpacity}%)`;
+      elements.greeting.style.background = `linear-gradient(135deg, rgba(${baseColor}, ${newSettings.greetingBgOpacity/100}) 0%, rgba(255,255,255, 0.05) 100%)`;
+      elements.greeting.style.opacity = '';
+    }
+    
+    // 每日一言
+    if (elements.quote) {
+      elements.quote.style.background = `linear-gradient(135deg, rgba(${baseColor}, ${newSettings.quoteBgOpacity/100}) 0%, rgba(255,255,255, 0.05) 100%)`;
+      elements.quote.style.opacity = '';
+      // 文字颜色应用到内部文本
+      if (elements.quoteText) {
+         elements.quoteText.style.color = `color-mix(in srgb, var(--text), transparent ${100 - newSettings.quoteTextOpacity}%)`;
+         elements.quoteText.style.fontSize = `${newSettings.quoteSize}px`;
+      }
+      if (elements.quoteAuthor) {
+         elements.quoteAuthor.style.color = `color-mix(in srgb, var(--muted), transparent ${100 - newSettings.quoteTextOpacity}%)`;
+         elements.quoteAuthor.style.fontSize = `${Math.max(10, newSettings.quoteSize - 2)}px`;
+      }
+    }
+    
+    // 搜索框
+    if (elements.searchContainer) {
+        elements.searchContainer.style.transform = `scale(${newSettings.searchSize / 100})`;
+        // 保持居中
+        elements.searchContainer.style.transformOrigin = 'center top';
+    }
+    if (elements.searchInput) {
+        elements.searchInput.style.backgroundColor = `rgba(${baseColor}, ${newSettings.searchBgOpacity / 100})`;
+    }
+  }
+  
+  // 更新滑块和显示值
+  function updateControls() {
+    Object.keys(sliders).forEach(key => {
+      if (sliders[key] && values[key]) {
+        // 确保 settings 中有该值，否则使用默认
+        const val = settings[key] !== undefined ? settings[key] : defaults[key];
+        sliders[key].value = val;
+        values[key].textContent = key.includes('Opacity') || key.includes('searchSize') ? `${val}%` : val;
+      }
+    });
+  }
+  
+  // 监听主题变化
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+        applySettings(settings);
+      }
+    });
+  });
+  observer.observe(document.documentElement, { attributes: true });
+  
+  // 初始化
+  applySettings(settings);
+  updateControls();
+  
+  // 绑定滑块事件
+  Object.keys(sliders).forEach(key => {
+    if (sliders[key]) {
+      sliders[key].addEventListener('input', (e) => {
+        const value = parseInt(e.target.value);
+        settings[key] = value;
+        values[key].textContent = key.includes('Opacity') || key.includes('searchSize') ? `${value}%` : value;
+        applySettings(settings);
+      });
+    }
+  });
+  
+  // 按钮事件
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', () => {
+      // 恢复到保存的设置
+      saved = JSON.parse(localStorage.getItem('startpage.appearance') || '{}');
+      settings = { ...defaults, ...saved };
+      applySettings(settings);
+      updateControls();
+      appearanceDialog.close();
+    });
+  }
+  
+  if (saveBtn) {
+    saveBtn.addEventListener('click', () => {
+      localStorage.setItem('startpage.appearance', JSON.stringify(settings));
+      appearanceDialog.close();
+      showToast('设置已保存');
+    });
+  }
+  
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      settings = JSON.parse(JSON.stringify(defaults));
+      applySettings(settings);
+      updateControls();
+    });
+  }
+}
+
 // 在DOMContentLoaded后初始化
 document.addEventListener('DOMContentLoaded', () => {
   loadSearchEngines();  // 加载搜索引擎配置
   initFocusMode();
+  initAppearanceSettings(); // 初始化外观设置
+  
+  // 绑定书签列表事件委托
+  const bookmarksList = document.getElementById('bookmarksList');
+  if (bookmarksList) {
+    bookmarksList.addEventListener('click', handleBookmarkActions, true);
+  }
 });

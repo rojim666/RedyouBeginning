@@ -1,10 +1,11 @@
 :root{
   /* 苹果风格配色 - 浅色模式 */
-  --bg: linear-gradient(135deg, #f5f7fa 0%, #e8ecf3 100%);
+  --bg: linear-gradient(135deg, #e2edff 20%, #b3cfff 100%);
   --bg-image: none;
   --text: #1d1d1f;
   --theme-transition: 500ms cubic-bezier(0.28, 0.11, 0.32, 1); /* Apple 缓动曲线 */
   --control-bg: rgba(255, 255, 255, 0.72); /* 毛玻璃效果 */
+  --header-bg: rgba(255, 255, 255, 0.80); /* 顶部元素背景透明度，0.30 即 30% */
   --control-text: #1d1d1f;
   --control-border: rgba(0, 0, 0, 0.04);
   --btn-bg: rgba(0, 0, 0, 0.04);
@@ -33,10 +34,11 @@
 
 [data-theme="dark"]{
   /* 苹果风格配色 - 深色模式 */
-  --bg: linear-gradient(135deg, #000000 0%, #1c1c1e 100%);
+  --bg: linear-gradient(135deg, #111133 20%, #030313 100%);
   --bg-image: none;
   --text: #f5f5f7;
   --control-bg: rgba(28, 28, 30, 0.72);
+  --header-bg: rgba(28, 28, 30, 0.30); /* 顶部元素背景透明度，0.30 即 30% */
   --control-text: #f5f5f7;
   --control-border: rgba(255, 255, 255, 0.06);
   --btn-bg: rgba(255, 255, 255, 0.08);
@@ -198,51 +200,68 @@ body{
   padding: 120px 24px 48px; /* 增加顶部padding */
 }
 
-/* 苹果风格时钟 - 缩小版 */
 .clock{
   font-size: 48px;
   font-weight: 600;
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg, var(--text) 0%, var(--muted) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 4px;
+  color: var(--text);
+  margin-bottom: 12px;
   animation: fadeIn 0.6s cubic-bezier(0.28, 0.11, 0.32, 1);
-  padding: 8px 16px;
-  border-radius: 12px;
-  backdrop-filter: blur(1.5px) saturate(180%);
-  -webkit-backdrop-filter: blur(1.5px) saturate(180%);
-  background-color: transparent;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  padding: 12px 32px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--header-bg) 0%, rgba(255,255,255, 0.05) 100%);
+  backdrop-filter: var(--blur-md) saturate(180%);
+  -webkit-backdrop-filter: var(--blur-md) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  transition: all var(--theme-transition);
+  text-shadow: none;
+}
+
+[data-theme="dark"] .clock {
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .greeting{
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 500;
   color: var(--text);
-  margin-top: 4px;
+  margin-top: 0;
   animation: fadeIn 0.6s cubic-bezier(0.28, 0.11, 0.32, 1) 0.1s both;
-  padding: 6px 14px;
-  border-radius: 8px;
-  backdrop-filter: blur(1.5px) saturate(180%);
-  -webkit-backdrop-filter: blur(1.5px) saturate(180%);
-  background-color: transparent;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  padding: 8px 20px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--header-bg) 0%, rgba(255,255,255, 0.05) 100%);
+  backdrop-filter: var(--blur-md) saturate(180%);
+  -webkit-backdrop-filter: var(--blur-md) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  transition: all var(--theme-transition);
+  text-shadow: none;
+}
+
+[data-theme="dark"] .greeting {
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 /* 每日一言样式 - 缩小版 */
 .quote{
-  margin-top: 16px;
+  margin-top: 24px;
   max-width: 500px;
   text-align: center;
   animation: fadeIn 0.8s cubic-bezier(0.28, 0.11, 0.32, 1) 0.2s both;
-  padding: 10px 18px;
-  border-radius: 12px;
-  backdrop-filter: blur(1.5px) saturate(180%);
-  -webkit-backdrop-filter: blur(1.5px) saturate(180%);
-  background-color: transparent;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  padding: 16px 24px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--header-bg) 0%, rgba(255,255,255, 0.05) 50%);
+  backdrop-filter: var(--blur-md) saturate(180%);
+  -webkit-backdrop-filter: var(--blur-md) saturate(50%);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  transition: all var(--theme-transition);
+  text-shadow: none;
+}
+
+[data-theme="dark"] .quote {
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .quote-text{
@@ -939,13 +958,23 @@ select::-ms-expand{
 
 /* Footer - 苹果简约风格 */
 .footer{
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 16px 20px;
   color: var(--muted);
   font-size: 11px;
   letter-spacing: -0.01em;
   opacity: 0.6;
   animation: fadeIn 1s cubic-bezier(0.28, 0.11, 0.32, 1) 0.8s both;
+}
+
+.footer-logo {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  border-radius: 4px;
 }
 
 .footer small{
@@ -3925,5 +3954,22 @@ dialog .btn:focus, .bg-form .btn:focus, .edit-form .btn:focus{
 
 .fp-controls .hidden {
   display: none;
+}
+
+/* 界面设置对话框靠右显示 */
+#appearanceDialog {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  bottom: auto;
+  left: auto;
+  transform: translateY(-50%);
+  margin: 0;
+  max-height: 90vh;
+}
+
+/* 让背景透明以便预览 */
+#appearanceDialog::backdrop {
+  background: transparent;
 }
 

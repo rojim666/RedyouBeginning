@@ -9,7 +9,7 @@ chrome.runtime.onInstalled.addListener((details) => {
     chrome.tabs.create({ url: 'chrome://newtab/' });
   } else if (details.reason === 'update') {
     // 扩展更新时的处理（可选）
-    console.log('红柚起始页 已更新到 v1.0.0');
+    console.log('红柚起始页 已更新到 v5.0.0');
   }
 });
 
