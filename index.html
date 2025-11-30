@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>红柚起始页</title>
-  <link rel="stylesheet" href="styles.css">
-  <!-- Add favicon link -->
-  <link rel="icon" type="image/svg+xml" href="_logo.svg">
+  <link rel="stylesheet" href="css/main.css">
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="icon.png">
 </head>
 <body>
   <main class="container">
@@ -61,6 +61,28 @@
             </g>
           </svg>
         </button>
+        <button id="soundBtn" class="icon-btn" title="环境音效" aria-label="环境音效">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M11 5L6 9H2V15H6L11 19V5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M15.54 8.46C16.4774 9.39764 17.004 10.6692 17.004 11.995C17.004 13.3208 16.4774 14.5924 15.54 15.53" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M19.07 4.93C20.9447 6.80528 21.9979 9.34836 21.9979 12C21.9979 14.6516 20.9447 17.1947 19.07 19.07" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button id="focusBtn" class="icon-btn" title="专注空间" aria-label="专注空间">
+          <!-- 番茄钟图标 - 精美的番茄形状 -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <!-- 番茄叶子 -->
+            <path d="M12 2C12 2 10 3 10 5C10 5 11 4.5 12 4.5C13 4.5 14 5 14 5C14 3 12 2 12 2Z" fill="currentColor" opacity="0.6"/>
+            <path d="M11 4.5C11 4.5 9.5 5 9 6.5C9 6.5 10 6 11 6C12 6 12.5 6.5 12.5 6.5C12.5 5.5 11 4.5 11 4.5Z" fill="currentColor" opacity="0.4"/>
+            <!-- 番茄主体 -->
+            <path d="M12 7C8.5 7 6 9.5 6 13C6 16.5 7.5 19 9 20.5C10 21.5 11 22 12 22C13 22 14 21.5 15 20.5C16.5 19 18 16.5 18 13C18 9.5 15.5 7 12 7Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- 番茄高光 -->
+            <ellipse cx="9.5" cy="11" rx="1.5" ry="2" fill="currentColor" opacity="0.2"/>
+            <!-- 时钟指针叠加 -->
+            <line x1="12" y1="13" x2="12" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.8"/>
+            <line x1="12" y1="13" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.8"/>
+          </svg>
+        </button>
         <button id="bgBtn" class="icon-btn" title="背景设置" aria-label="背景设置" onclick="openBackgroundDialog()">
           <!-- simple image icon -->
           <svg width="18" height="14" viewBox="0 0 18 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -77,6 +99,10 @@
         </button>
       </div>
       <div class="right">
+        <div class="weather" id="weather">
+          <span class="weather-icon" id="weatherIcon">🌤️</span>
+          <span class="weather-temp" id="weatherTemp">--°C</span>
+        </div>
         <button id="editLinksBtn" class="btn">书签</button>
       </div>
     </header>
@@ -84,11 +110,15 @@
     <section class="center">
       <div class="clock" id="clock">00:00</div>
       <div class="greeting" id="greeting">你好</div>
+      <div class="quote" id="quote">
+        <p class="quote-text" id="quoteText"></p>
+        <small class="quote-author" id="quoteAuthor"></small>
+      </div>
 
       <div class="search-container">
         <form id="searchForm" class="search" autocomplete="off">
           <select id="engineSelect" aria-label="搜索引擎">
-            <option value="https://www.google.com/search?q=">Google</option>
+            <option value="https://www.google.com/search?q=" selected>Google</option>
             <option value="https://www.bing.com/search?q=">Bing</option>
             <option value="https://www.baidu.com/s?wd=">百度</option>
             <option value="https://duckduckgo.com/?q=">DuckDuckGo</option>
@@ -97,7 +127,7 @@
             <input id="searchInput" type="search" placeholder="搜索或输入网址" aria-label="搜索框">
             <div id="searchSuggestions" class="search-suggestions hidden"></div>
           </div>
-          <button type="submit" class="btn">搜索</button>
+          <button type="submit" class="btn primary search-btn">搜索</button>
         </form>
       </div>
 
@@ -107,25 +137,48 @@
     </section>
 
     <footer class="footer">
-      <small>红柚起始页</small>
+      <img src="icon.png" alt="Logo" class="footer-logo">
+      <small>红柚起始页 made with rojim</small>
     </footer>
   </main>
 
   <dialog id="editDialog">
     <form method="dialog" class="edit-form">
       <div class="dialog-header">
-        <h3>编辑书签</h3>
+        <h3 id="editDialogTitle">编辑快速链接</h3>
         <button type="button" class="close-btn" aria-label="关闭" onclick="document.getElementById('editDialog').close()">×</button>
       </div>
-      <div class="dialog-content">
-        <div id="linksEditor"></div>
+      
+      <!-- 编辑标签页 -->
+      <div class="edit-tabs" id="editTabs">
+        <button type="button" class="tab-btn active" data-tab="links">快速链接</button>
+        <button type="button" class="tab-btn" data-tab="bookmarks">收藏夹</button>
+        <button type="button" class="tab-btn" data-tab="engines">搜索引擎</button>
       </div>
+      
+      <div class="dialog-content">
+        <!-- 快速链接编辑器 -->
+        <div class="edit-panel active" id="linksPanel">
+          <div id="linksEditor"></div>
+        </div>
+        
+        <!-- 收藏夹编辑器 -->
+        <div class="edit-panel" id="bookmarksEditPanel">
+          <div id="bookmarksEditor"></div>
+        </div>
+        
+        <!-- 搜索引擎编辑器 -->
+        <div class="edit-panel" id="enginesPanel">
+          <div id="enginesEditor"></div>
+        </div>
+      </div>
+      
       <div class="dialog-actions">
         <button id="addLinkBtn" type="button" class="btn secondary">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 6px;">
             <path d="M7 1V13M1 7H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
-          添加书签
+          添加
         </button>
         <div class="dialog-actions-right">
           <button id="cancelEditBtn" type="button" class="btn secondary">取消</button>
@@ -160,12 +213,12 @@
           <div class="custom-upload">
             <div class="upload-area" id="uploadArea">
               <div class="upload-icon">📁</div>
-              <p>拖拽图片到这里或点击上传</p>
-              <small>支持 JPG、PNG、GIF 格式，大图片会自动压缩</small>
-              <input id="bgFileInput" type="file" accept="image/*" hidden>
+              <p>拖拽图片或视频到这里或点击上传</p>
+              <small>支持 JPG、PNG、GIF、MP4、WebM 格式，大图片会自动压缩</small>
+              <input id="bgFileInput" type="file" accept="image/*,video/*" hidden>
             </div>
             <div class="url-input">
-              <label>或输入图片URL</label>
+              <label>或输入图片/视频URL</label>
               <input id="bgUrlInput" placeholder="https://..." type="url">
               <button id="applyUrlBtn" type="button" class="btn">应用URL背景</button>
             </div>
@@ -195,6 +248,157 @@
       </div>
     </form>
   </dialog>
+
+  <dialog id="appearanceDialog" class="bg-dialog">
+    <form method="dialog" class="bg-form">
+      <header class="bg-header">
+        <h3>界面设置</h3>
+        <button id="cancelAppearanceBtn" type="button" class="close-btn" aria-label="关闭">×</button>
+      </header>
+  
+      <div class="bg-content" style="padding: 20px;">
+        <div class="appearance-section" style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="margin: 0; font-size: 14px; color: var(--muted);">全局样式</h4>
+          </div>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer;">
+            <input type="checkbox" id="showGlassCardCheck" checked> 显示组件背景框 (磨砂玻璃)
+          </label>
+        </div>
+
+        <div class="appearance-section">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="margin: 0; font-size: 14px; color: var(--muted);">时钟</h4>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+              <input type="checkbox" id="showClockCheck" checked> 显示
+            </label>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">大小</span>
+            <input type="range" id="clockSizeSlider" min="24" max="300" value="48" style="flex: 1;">
+            <span id="clockSizeValue" style="font-size: 13px; width: 36px; text-align: right;">48</span>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">文字透明</span>
+            <input type="range" id="clockTextOpacitySlider" min="0" max="100" value="100" style="flex: 1;">
+            <span id="clockTextOpacityValue" style="font-size: 13px; width: 36px; text-align: right;">100%</span>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">背景透明</span>
+            <input type="range" id="clockBgOpacitySlider" min="0" max="100" value="80" style="flex: 1;">
+            <span id="clockBgOpacityValue" style="font-size: 13px; width: 36px; text-align: right;">80%</span>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">字体颜色</span>
+            <input type="color" id="clockColorInput" value="#ffffff" style="width: 36px; height: 32px; padding: 0; border: none; background: transparent; cursor: pointer;">
+            <button id="resetClockColorBtn" class="btn small" style="padding: 4px 8px; font-size: 12px;">重置</button>
+          </div>
+        </div>
+  
+        <div class="appearance-section" style="margin-top: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="margin: 0; font-size: 14px; color: var(--muted);">问候语</h4>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+              <input type="checkbox" id="showGreetingCheck" checked> 显示
+            </label>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">大小</span>
+            <input type="range" id="greetingSizeSlider" min="12" max="48" value="16" style="flex: 1;">
+            <span id="greetingSizeValue" style="font-size: 13px; width: 36px; text-align: right;">16</span>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">文字透明</span>
+            <input type="range" id="greetingTextOpacitySlider" min="0" max="100" value="100" style="flex: 1;">
+            <span id="greetingTextOpacityValue" style="font-size: 13px; width: 36px; text-align: right;">100%</span>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">背景透明</span>
+            <input type="range" id="greetingBgOpacitySlider" min="0" max="100" value="80" style="flex: 1;">
+            <span id="greetingBgOpacityValue" style="font-size: 13px; width: 36px; text-align: right;">80%</span>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">字体颜色</span>
+            <input type="color" id="greetingColorInput" value="#ffffff" style="width: 36px; height: 32px; padding: 0; border: none; background: transparent; cursor: pointer;">
+            <button id="resetGreetingColorBtn" class="btn small" style="padding: 4px 8px; font-size: 12px;">重置</button>
+          </div>
+        </div>
+  
+        <div class="appearance-section" style="margin-top: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="margin: 0; font-size: 14px; color: var(--muted);">每日一言</h4>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+              <input type="checkbox" id="showQuoteCheck" checked> 显示
+            </label>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">大小</span>
+            <input type="range" id="quoteSizeSlider" min="10" max="32" value="13" style="flex: 1;">
+            <span id="quoteSizeValue" style="font-size: 13px; width: 36px; text-align: right;">13</span>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">文字透明</span>
+            <input type="range" id="quoteTextOpacitySlider" min="0" max="100" value="85" style="flex: 1;">
+            <span id="quoteTextOpacityValue" style="font-size: 13px; width: 36px; text-align: right;">85%</span>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">背景透明</span>
+            <input type="range" id="quoteBgOpacitySlider" min="0" max="100" value="80" style="flex: 1;">
+            <span id="quoteBgOpacityValue" style="font-size: 13px; width: 36px; text-align: right;">80%</span>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">字体颜色</span>
+            <input type="color" id="quoteColorInput" value="#ffffff" style="width: 36px; height: 32px; padding: 0; border: none; background: transparent; cursor: pointer;">
+            <button id="resetQuoteColorBtn" class="btn small" style="padding: 4px 8px; font-size: 12px;">重置</button>
+          </div>
+        </div>
+
+        <div class="appearance-section" style="margin-top: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="margin: 0; font-size: 14px; color: var(--muted);">搜索框</h4>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+              <input type="checkbox" id="showSearchCheck" checked> 显示
+            </label>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">大小</span>
+            <input type="range" id="searchSizeSlider" min="80" max="200" value="100" style="flex: 1;">
+            <span id="searchSizeValue" style="font-size: 13px; width: 36px; text-align: right;">100%</span>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">背景透明</span>
+            <input type="range" id="searchBgOpacitySlider" min="0" max="100" value="72" style="flex: 1;">
+            <span id="searchBgOpacityValue" style="font-size: 13px; width: 36px; text-align: right;">72%</span>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">按钮颜色</span>
+            <input type="color" id="searchBtnColorInput" value="#007aff" style="width: 36px; height: 32px; padding: 0; border: none; background: transparent; cursor: pointer;">
+            <button id="resetSearchBtnColorBtn" class="btn small" style="padding: 4px 8px; font-size: 12px;">重置</button>
+          </div>
+        </div>
+
+        <div class="appearance-section" style="margin-top: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="margin: 0; font-size: 14px; color: var(--muted);">桌面书签</h4>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+              <input type="checkbox" id="showBookmarksCheck" checked> 显示
+            </label>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <span style="font-size: 13px; width: 60px;">书签大小</span>
+            <input type="range" id="bookmarkSizeSlider" min="80" max="200" value="140" style="flex: 1;">
+            <span id="bookmarkSizeValue" style="font-size: 13px; width: 36px; text-align: right;">140</span>
+          </div>
+        </div>
+      </div>
+  
+      <div class="bg-actions">
+        <button id="resetAppearanceBtn" type="button" class="btn secondary">重置</button>
+        <button id="saveAppearanceBtn" type="button" class="btn primary">完成</button>
+      </div>
+    </form>
+  </dialog>
+
 
   <!-- 收藏夹侧边栏 -->
   <div id="bookmarksPanel" class="bookmarks-panel hidden">
@@ -230,14 +434,467 @@
     
     <div class="bookmarks-footer">
       <small>提示：可以导入Edge书签文件</small>
-      <button id="exportBookmarksBtn" class="btn secondary small">导出</button>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+        <label style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="desktopBookmarksToggle"> 桌面书签
+        </label>
+        <button id="exportBookmarksBtn" class="btn secondary small">导出</button>
+      </div>
     </div>
   </div>
 
   <!-- 收藏夹遮罩层 -->
   <div id="bookmarksOverlay" class="bookmarks-overlay hidden"></div>
 
-  <script src="script.js"></script>
+  <!-- 音效控制面板 -->
+  <div id="soundPanel" class="sound-panel hidden">
+    <div class="sound-header">
+      <h3>音效设置</h3>
+      <button id="closeSoundBtn" class="icon-btn" title="关闭">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="sound-tabs">
+      <button class="tab-btn active" data-tab="ambient">环境音效</button>
+      <button class="tab-btn" data-tab="music">网易云音乐</button>
+    </div>
+    
+    <div id="ambientPanel" class="sound-content active">
+      <div class="sound-list" id="soundList">
+        <!-- 音效选项将通过JS填充 -->
+      </div>
+      
+      <div class="volume-control">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M11 5L6 9H2V15H6L11 19V5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <input type="range" id="volumeSlider" min="0" max="100" value="50" step="1">
+        <span id="volumeValue">50%</span>
+      </div>
+    </div>
+
+    <div id="musicPanel" class="sound-content hidden">
+      <div class="music-input-group">
+        <input type="text" id="musicIdInput" placeholder="输入网易云歌单ID或链接" title="输入网易云歌单ID或链接">
+        <button id="loadMusicBtn" class="btn secondary small">加载</button>
+        <button id="musicHelpBtn" class="icon-btn" title="如何获取ID?" style="width:32px;height:32px;margin-left:4px;border:1px solid var(--control-border);border-radius:6px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="12" y1="17" x2="12" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="music-player-container" id="musicPlayerContainer">
+        <div class="music-placeholder">
+          <p>请输入歌单ID并加载</p>
+          <small>提示: 网页版歌单URL中的 id 参数</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 天气详情卡片 -->
+  <div id="weatherCard" class="weather-card hidden">
+    <div class="weather-card-header">
+      <div class="weather-card-title">
+        <h3 id="weatherLocation">天气详情</h3>
+        <button id="closeWeatherCard" class="icon-btn" title="关闭">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="weather-main">
+        <div class="weather-main-icon" id="weatherCardIcon">🌤️</div>
+        <div class="weather-main-info">
+          <div class="weather-main-temp" id="weatherCardTemp">--°C</div>
+          <div class="weather-main-desc" id="weatherCardDesc">加载中...</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="weather-card-body">
+      <div class="weather-detail-grid">
+        <div class="weather-detail-item">
+          <div class="weather-detail-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="weather-detail-label">风速</div>
+          <div class="weather-detail-value" id="weatherWindSpeed">-- km/h</div>
+        </div>
+        <div class="weather-detail-item">
+          <div class="weather-detail-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="weather-detail-label">湿度</div>
+          <div class="weather-detail-value" id="weatherHumidity">--%</div>
+        </div>
+        <div class="weather-detail-item">
+          <div class="weather-detail-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="11.5" cy="18.5" r="1.5" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="weather-detail-label">体感温度</div>
+          <div class="weather-detail-value" id="weatherFeelsLike">--°C</div>
+        </div>
+        <div class="weather-detail-item">
+          <div class="weather-detail-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="weather-detail-label">能见度</div>
+          <div class="weather-detail-value" id="weatherVisibility">-- km</div>
+        </div>
+        <div class="weather-detail-item">
+          <div class="weather-detail-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/>
+              <line x1="12" y1="1" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="12" y1="21" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="1" y1="12" x2="3" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="21" y1="12" x2="23" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="weather-detail-label">紫外线</div>
+          <div class="weather-detail-value" id="weatherUV">--</div>
+        </div>
+        <div class="weather-detail-item">
+          <div class="weather-detail-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M17 18a5 5 0 0 0-10 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="12" y1="2" x2="12" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="4.22" y1="10.22" x2="5.64" y2="11.64" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="1" y1="18" x2="3" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="21" y1="18" x2="23" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="18.36" y1="11.64" x2="19.78" y2="10.22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="weather-detail-label">日出</div>
+          <div class="weather-detail-value" id="weatherSunrise">--:--</div>
+        </div>
+        <div class="weather-detail-item">
+          <div class="weather-detail-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M17 18a5 5 0 0 0-10 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="12" y1="9" x2="12" y2="2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="4.22" y1="10.22" x2="5.64" y2="11.64" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="1" y1="18" x2="3" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="21" y1="18" x2="23" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="18.36" y1="11.64" x2="19.78" y2="10.22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="weather-detail-label">日落</div>
+          <div class="weather-detail-value" id="weatherSunset">--:--</div>
+        </div>
+        <div class="weather-detail-item">
+          <div class="weather-detail-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+              <polygon points="12,6 13.5,11 18,12 13.5,13 12,18 10.5,13 6,12 10.5,11" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="weather-detail-label">风向</div>
+          <div class="weather-detail-value" id="weatherWindDir">--</div>
+        </div>
+      </div>
+      
+      <div class="weather-update-time">
+        <small id="weatherUpdateTime">更新时间：--</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- 天气卡片遮罩层 -->
+  <div id="weatherOverlay" class="weather-overlay hidden"></div>
+
+  <!-- 专注空间 -->
+  <div id="focusMode" class="focus-mode hidden">
+    <!-- 透明度控制条 -->
+    <div class="focus-opacity-control">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.3"/>
+        <circle cx="12" cy="12" r="6" stroke="currentColor" stroke-width="2" opacity="0.6"/>
+        <circle cx="12" cy="12" r="3" fill="currentColor"/>
+      </svg>
+      <input type="range" id="focusOpacitySlider" min="0" max="100" value="85" step="1">
+      <span id="focusOpacityValue">85%</span>
+    </div>
+    
+    <button id="exitFocusBtn" class="exit-focus-btn" title="退出专注模式">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+    
+    <div class="focus-container">
+      <!-- 专注计时器 -->
+      <div class="focus-timer-section">
+        <div class="focus-timer-wrapper">
+          <!-- SVG圆形进度条 -->
+          <svg class="focus-progress-ring" viewBox="0 0 200 200">
+            <circle class="progress-ring-bg" cx="100" cy="100" r="85" />
+            <circle class="progress-ring-circle" cx="100" cy="100" r="85" />
+            
+            <!-- 装饰性时钟刻度 -->
+            <g class="clock-ticks" opacity="0.15">
+              <!-- 12点 -->
+              <line x1="100" y1="20" x2="100" y2="28" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              <!-- 3点 -->
+              <line x1="180" y1="100" x2="172" y2="100" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              <!-- 6点 -->
+              <line x1="100" y1="180" x2="100" y2="172" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              <!-- 9点 -->
+              <line x1="20" y1="100" x2="28" y2="100" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              
+              <!-- 其他刻度 -->
+              <line x1="143" y1="29" x2="138" y2="34" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="171" y1="57" x2="166" y2="62" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="171" y1="143" x2="166" y2="138" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="143" y1="171" x2="138" y2="166" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="57" y1="171" x2="62" y2="166" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="29" y1="143" x2="34" y2="138" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="29" y1="57" x2="34" y2="62" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="57" y1="29" x2="62" y2="34" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </g>
+            
+            <!-- 中心装饰圆点 -->
+            <circle cx="100" cy="100" r="3" fill="currentColor" opacity="0.3"/>
+          </svg>
+          
+          <div class="focus-timer-content">
+            <div class="focus-time-display" id="focusTimeDisplay">25:00</div>
+            <div class="focus-timer-label" id="focusTimerLabel">准备开始</div>
+          </div>
+        </div>
+        
+        <!-- 控制按钮 -->
+        <div class="focus-controls">
+          <button id="focusStartBtn" class="focus-btn focus-btn-primary">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- 圆角三角形播放按钮 -->
+              <path d="M8 5.14v13.72L19 12L8 5.14z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            </svg>
+            开始专注
+          </button>
+          <button id="focusPauseBtn" class="focus-btn focus-btn-secondary hidden">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- 圆角矩形暂停按钮 -->
+              <rect x="6" y="4" width="4" height="16" rx="1.5" fill="currentColor"/>
+              <rect x="14" y="4" width="4" height="16" rx="1.5" fill="currentColor"/>
+            </svg>
+            暂停
+          </button>
+          <button id="focusResetBtn" class="focus-btn focus-btn-secondary">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- 优化的重置箭头 -->
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M3 3v5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            重置
+          </button>
+        </div>
+        
+        <!-- 时长选择 -->
+        <div class="focus-duration-select">
+          <button class="duration-btn active" data-duration="25">25分钟</button>
+          <button class="duration-btn" data-duration="15">15分钟</button>
+          <button class="duration-btn" data-duration="45">45分钟</button>
+          <button class="duration-btn" data-duration="60">60分钟</button>
+        </div>
+      </div>
+      
+      <!-- 专注任务列表 -->
+      <div class="focus-tasks-section">
+        <div class="focus-tasks-header">
+          <h3>专注任务</h3>
+          <button id="addFocusTaskBtn" class="add-task-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <div class="focus-tasks-list" id="focusTasksList">
+          <!-- 任务将通过JS动态添加 -->
+        </div>
+        <input type="text" id="newFocusTaskInput" class="new-task-input hidden" placeholder="输入任务内容...">
+      </div>
+      
+      <!-- 专注统计 -->
+      <div class="focus-stats-section">
+        <div class="focus-quote" id="focusQuote">
+          "专注是通往卓越的唯一道路"
+        </div>
+        <div class="focus-stats">
+          <div class="stat-item">
+            <div class="stat-icon">
+              <!-- 精美的番茄SVG图标 -->
+              <svg width="40" height="40" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- 番茄叶子 -->
+                <path d="M24 6C24 6 20 8 20 12C20 12 22 10 24 10C26 10 28 12 28 12C28 8 24 6 24 6Z" fill="#34C759" opacity="0.9"/>
+                <path d="M22 10C22 10 19 11 18 14C18 14 20 12.5 22 12.5C24 12.5 25 14 25 14C25 11.5 22 10 22 10Z" fill="#30D158" opacity="0.7"/>
+                <!-- 番茄主体 - 渐变效果 -->
+                <defs>
+                  <linearGradient id="tomatoGrad" x1="24" y1="14" x2="24" y2="42" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stop-color="#FF3B30"/>
+                    <stop offset="100%" stop-color="#FF453A"/>
+                  </linearGradient>
+                </defs>
+                <path d="M24 14C17 14 12 19 12 26C12 33 15 38 18 41C20 43 22 44 24 44C26 44 28 43 30 41C33 38 36 33 36 26C36 19 31 14 24 14Z" fill="url(#tomatoGrad)" stroke="#FF3B30" stroke-width="2"/>
+                <!-- 高光 -->
+                <ellipse cx="19" cy="22" rx="3" ry="5" fill="white" opacity="0.3"/>
+                <ellipse cx="16" cy="24" rx="1.5" ry="2.5" fill="white" opacity="0.5"/>
+              </svg>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value" id="todayPomodoroCount">0</div>
+              <div class="stat-label">今日番茄</div>
+            </div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon">
+              <!-- 精美的时钟SVG图标 -->
+              <svg width="40" height="40" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- 外圈 -->
+                <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="2.5" opacity="0.3"/>
+                <circle cx="24" cy="24" r="18" fill="currentColor" opacity="0.05"/>
+                
+                <!-- 时钟刻度 -->
+                <g opacity="0.6">
+                  <!-- 12, 3, 6, 9 主刻度 -->
+                  <line x1="24" y1="6" x2="24" y2="10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                  <line x1="42" y1="24" x2="38" y2="24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                  <line x1="24" y1="42" x2="24" y2="38" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                  <line x1="6" y1="24" x2="10" y2="24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                  
+                  <!-- 其他刻度 -->
+                  <line x1="35" y1="11" x2="33" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <line x1="39" y1="18" x2="37" y2="19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <line x1="39" y1="30" x2="37" y2="29" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <line x1="35" y1="37" x2="33" y2="35" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <line x1="13" y1="37" x2="15" y2="35" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <line x1="9" y1="30" x2="11" y2="29" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <line x1="9" y1="18" x2="11" y2="19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <line x1="13" y1="11" x2="15" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </g>
+                
+                <!-- 时针和分针 -->
+                <line x1="24" y1="24" x2="24" y2="14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                <line x1="24" y1="24" x2="30" y2="28" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                
+                <!-- 中心圆点 -->
+                <circle cx="24" cy="24" r="2.5" fill="currentColor"/>
+              </svg>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value" id="todayFocusTime">0分钟</div>
+              <div class="stat-label">专注时长</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 设置浮动按钮 -->
+  <button id="settingsFab" class="settings-fab" title="设置" aria-label="设置">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 15c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+
+  <!-- 设置面板 -->
+  <div id="settingsPanel" class="settings-panel">
+    <div class="settings-panel-title">功能设置</div>
+    <button id="panelSoundBtn" class="settings-panel-item">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M11 5L6 9H2V15H6L11 19V5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M15.54 8.46C16.48 9.4 17 10.67 17 12s-.52 2.6-1.46 3.54" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>音乐</span>
+    </button>
+    <button id="panelFocusBtn" class="settings-panel-item">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 7C8.5 7 6 9.5 6 13C6 16.5 7.5 19 9 20.5C10 21.5 11 22 12 22C13 22 14 21.5 15 20.5C16.5 19 18 16.5 18 13C18 9.5 15.5 7 12 7Z" stroke="currentColor" stroke-width="2"/>
+      </svg>
+      <span>专注空间</span>
+    </button>
+    <button id="panelBgBtn" class="settings-panel-item">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+        <circle cx="8.5" cy="8.5" r="2.5" fill="currentColor"/>
+        <path d="M3 16l5-5 6 6 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>背景设置</span>
+    </button>
+    <button id="panelBookmarksBtn" class="settings-panel-item">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>收藏夹</span>
+    </button>
+    <button id="panelAppearanceBtn" class="settings-panel-item">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>界面设置</span>
+    </button>
+  </div>
+
+  <!-- 悬浮音乐播放器 -->
+  <div id="floatingPlayer" class="floating-player hidden">
+    <div class="fp-cover"></div>
+    <div class="fp-info">
+      <div class="fp-title" id="fpTitle">未播放</div>
+      <div class="fp-artist" id="fpArtist">-</div>
+    </div>
+    <div class="fp-controls">
+      <button id="fpPrevBtn" class="icon-btn" title="上一首">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19 20L9 12l10-8v16zM5 19V5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button id="fpPlayBtn" class="icon-btn play-btn" title="播放/暂停">
+        <svg id="fpPlayIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+        <svg id="fpPauseIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" class="hidden">
+          <rect x="6" y="4" width="4" height="16" rx="1"/>
+          <rect x="14" y="4" width="4" height="16" rx="1"/>
+        </svg>
+      </button>
+      <button id="fpNextBtn" class="icon-btn" title="下一首">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 4l10 8-10 8V4zM19 5v14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button id="fpListBtn" class="icon-btn" title="打开列表">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+  <script type="module" src="js/main.js"></script>
   <div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
 </body>
 </html>

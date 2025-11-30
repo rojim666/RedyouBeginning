@@ -1,0 +1,52 @@
+[
+  {
+    "id": 1764336893197.6904,
+    "title": "深圳技术大学OA系统",
+    "url": "https://home.sztu.edu.cn/bmportal/index.portal",
+    "folder": "imported",
+    "favicon": "https://www.google.com/s2/favicons?domain=home.sztu.edu.cn&sz=64",
+    "visible": true,
+    "showLogo": true,
+    "timestamp": 1764336893197
+  },
+  {
+    "id": 1764336893197.658,
+    "title": "数据结构课程组",
+    "url": "https://acm-sztu-edu-cn-40080-p.webvpn.sztu.edu.cn:8118/course/index",
+    "folder": "imported",
+    "favicon": "https://www.google.com/s2/favicons?domain=acm-sztu-edu-cn-40080-p.webvpn.sztu.edu.cn&sz=64",
+    "visible": true,
+    "showLogo": true,
+    "timestamp": 1764336893197
+  },
+  {
+    "id": 1764336893197.5527,
+    "title": "深圳技术大学信息中心公文通",
+    "url": "https://nbw.sztu.edu.cn/",
+    "folder": "imported",
+    "favicon": "https://www.google.com/s2/favicons?domain=nbw.sztu.edu.cn&sz=64",
+    "visible": true,
+    "showLogo": true,
+    "timestamp": 1764336893197
+  },
+  {
+    "id": 1764336893197.1243,
+    "title": "教务系统",
+    "url": "https://auth.sztu.edu.cn/idp/authcenter/ActionAuthChain?entityId=jiaowu",
+    "folder": "imported",
+    "favicon": "https://www.google.com/s2/favicons?domain=auth.sztu.edu.cn&sz=64",
+    "visible": true,
+    "showLogo": true,
+    "timestamp": 1764336893197
+  },
+  {
+    "id": 1764336893197.946,
+    "title": "豆包",
+    "url": "https://www.doubao.com/chat/",
+    "folder": "imported",
+    "favicon": "https://www.google.com/s2/favicons?domain=www.doubao.com&sz=64",
+    "visible": true,
+    "showLogo": true,
+    "timestamp": 1764336893197
+  }
+]
