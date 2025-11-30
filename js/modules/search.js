@@ -232,9 +232,10 @@ function renderSearchSuggestions(items) {
   if (searchHistory.length > 0) {
     const clearBtn = document.createElement('button');
     clearBtn.className = 'clear-history-btn';
+    clearBtn.type = 'button'; // Prevent submitting the form on Enter
     clearBtn.textContent = '清空搜索记录';
     clearBtn.addEventListener('click', (e) => {
-        e.preventDefault(); // Prevent form submission if inside form
+        e.preventDefault(); 
         clearSearchHistory();
     });
     fragment.appendChild(clearBtn);

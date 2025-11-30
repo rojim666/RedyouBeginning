@@ -1363,10 +1363,10 @@ dialog#editDialog::backdrop{
 .edit-panel{display:none}
 .edit-panel.active{display:block}
 
-.presets-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
-.preset-item{aspect-ratio:16/9;border-radius:12px;border:1px solid rgba(0,0,0,0.06);cursor:pointer;background-size:cover;background-position:center;position:relative;overflow:hidden;transition:transform .28s cubic-bezier(.2,.9,.2,1), box-shadow .28s, border-color .18s}
-.preset-item:hover{transform:translateY(-6px) scale(1.02);box-shadow:0 10px 30px rgba(16,24,40,0.12);border-color:rgba(37,99,235,0.18)}
-.preset-item.selected{border-color:var(--accent);box-shadow:0 12px 36px rgba(37,99,235,0.12);transform:translateY(-4px) scale(1.03)}
+.presets-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:4px;padding:4px}
+.preset-item{aspect-ratio:16/9;border-radius:8px;border:2px solid transparent;cursor:pointer;background-size:cover;background-position:center;position:relative;overflow:hidden;transition:all .2s ease}
+.preset-item:hover{transform:scale(1.02);z-index:1;box-shadow:0 4px 12px rgba(0,0,0,0.15)}
+.preset-item.selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent);transform:none}
 .preset-item .preset-preview{position:absolute;inset:0;border-radius:12px}
 .preset-item .preset-name{position:absolute;left:12px;bottom:10px;color:var(--control-text);background:rgba(0,0,0,0.05);backdrop-filter:blur(6px);padding:6px 10px;border-radius:8px;font-size:13px}
 

@@ -1,6 +1,6 @@
 
 import { $, showToast } from './utils.js';
-import { fetchWeather, fetchLocationName } from './api.js';
+import { fetchWeather, fetchLocationName } from '../api/api.js';
 
 let weatherData = null;
 

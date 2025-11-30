@@ -4,7 +4,7 @@ import { initFocusMode } from './focus.js';
 import { renderLinksEditor } from './links.js';
 import { renderBookmarksEditor } from './bookmarks.js';
 import { openBackgroundDialog } from './background.js';
-import { fetchQuote } from './api.js';
+import { fetchQuote } from '../api/api.js';
 
 export function initSettings() {
   const settingsBtn = $('#settingsBtn');
@@ -155,11 +155,14 @@ function initAppearanceSettings() {
   
   const defaults = {
     showGlassCard: true,
+    showWeather: true,
+    showMusicPlayer: true,
     clockSize: 48,
     clockTextOpacity: 100,
     clockBgOpacity: 80,
     clockColor: null,
     showClock: true,
+    showSeconds: false,
     greetingSize: 16,
     greetingTextOpacity: 100,
     greetingBgOpacity: 80,
@@ -173,6 +176,7 @@ function initAppearanceSettings() {
     searchSize: 100,
     searchBgOpacity: 72,
     showSearch: true,
+    showSearchBtn: true,
     bookmarkColumns: 6,
     showBookmarks: true,
     bookmarkSize: 140,
@@ -191,7 +195,10 @@ function initAppearanceSettings() {
     searchInput: document.querySelector('.search input'),
     searchBtn: document.querySelector('.search-btn'),
     searchContainer: document.querySelector('.search-container'),
-    linksGrid: document.getElementById('linksGrid')
+    searchForm: document.getElementById('searchForm'),
+    linksGrid: document.getElementById('linksGrid'),
+    weather: document.getElementById('weather'),
+    floatingPlayer: document.getElementById('floatingPlayer')
   };
   
   const sliders = {
@@ -212,10 +219,14 @@ function initAppearanceSettings() {
 
   const checkboxes = {
     showGlassCard: document.getElementById('showGlassCardCheck'),
+    showWeather: document.getElementById('showWeatherCheck'),
+    showMusicPlayer: document.getElementById('showMusicPlayerCheck'),
     showClock: document.getElementById('showClockCheck'),
+    showSeconds: document.getElementById('showSecondsCheck'),
     showGreeting: document.getElementById('showGreetingCheck'),
     showQuote: document.getElementById('showQuoteCheck'),
     showSearch: document.getElementById('showSearchCheck'),
+    showSearchBtn: document.getElementById('showSearchBtnCheck'),
     showBookmarks: document.getElementById('showBookmarksCheck')
   };
   
@@ -259,6 +270,16 @@ function initAppearanceSettings() {
     if (elements.greeting) elements.greeting.style.display = newSettings.showGreeting ? '' : 'none';
     if (elements.quote) elements.quote.style.display = newSettings.showQuote ? '' : 'none';
     if (elements.searchContainer) elements.searchContainer.style.display = newSettings.showSearch ? '' : 'none';
+    if (elements.weather) elements.weather.style.display = newSettings.showWeather ? '' : 'none';
+    
+    if (elements.floatingPlayer) {
+        if (!newSettings.showMusicPlayer) {
+            elements.floatingPlayer.style.setProperty('display', 'none', 'important');
+        } else {
+            elements.floatingPlayer.style.removeProperty('display');
+        }
+    }
+
     if (elements.linksGrid) {
         if (newSettings.showBookmarks) {
             elements.linksGrid.style.removeProperty('display');
@@ -317,10 +338,12 @@ function initAppearanceSettings() {
       }
     }
     
-    if (elements.searchContainer) {
+    if (elements.searchContainer && elements.searchForm) {
         const scale = newSettings.searchSize / 100;
-        elements.searchContainer.style.transform = `scale(${scale})`;
-        elements.searchContainer.style.transformOrigin = 'center top';
+        // Apply scale to the form instead of container to avoid conflict with container's animation
+        elements.searchForm.style.transform = `scale(${scale})`;
+        elements.searchForm.style.transformOrigin = 'center top';
+        
         const baseHeight = 50;
         const extraHeight = baseHeight * (scale - 1);
         elements.searchContainer.style.marginBottom = `${extraHeight}px`;
@@ -330,12 +353,17 @@ function initAppearanceSettings() {
     }
     
     if (elements.searchBtn) {
-        if (newSettings.searchBtnColor) {
-            elements.searchBtn.style.backgroundColor = newSettings.searchBtnColor;
-            elements.searchBtn.style.color = '#fff';
+        if (newSettings.showSearchBtn) {
+            elements.searchBtn.style.display = '';
+            if (newSettings.searchBtnColor) {
+                elements.searchBtn.style.background = newSettings.searchBtnColor;
+                elements.searchBtn.style.color = '#fff';
+            } else {
+                elements.searchBtn.style.background = '';
+                elements.searchBtn.style.color = '';
+            }
         } else {
-            elements.searchBtn.style.backgroundColor = '';
-            elements.searchBtn.style.color = '';
+            elements.searchBtn.style.display = 'none';
         }
     }
 
@@ -623,16 +651,23 @@ export function updateGreeting() {
   
   greetingEl.textContent = text;
 }
-
 export function updateClock() {
   const clockEl = $('#clock');
   
   if (!clockEl) return;
   
+  const settings = JSON.parse(localStorage.getItem('startpage.appearance') || '{}');
+  const showSeconds = settings.showSeconds || false;
+
   const now = new Date();
   const hours = String(now.getHours()).padStart(2, '0');
   const minutes = String(now.getMinutes()).padStart(2, '0');
-  const timeStr = `${hours}:${minutes}`;
+  let timeStr = `${hours}:${minutes}`;
+  
+  if (showSeconds) {
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    timeStr += `:${seconds}`;
+  }
   
   const span = clockEl.querySelector('span');
   if (span) {
@@ -640,7 +675,7 @@ export function updateClock() {
   } else {
     clockEl.innerHTML = `<span>${timeStr}</span>`;
   }
-}
+} 
 
 export function initThemeToggle() {
   const themeToggle = $('#themeToggle');

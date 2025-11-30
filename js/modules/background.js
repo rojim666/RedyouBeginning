@@ -5,29 +5,27 @@ let currentBg = '';
 let currentBgType = 'color';
 
 const presetBackgrounds = [
-    { id: 'gradient1', name: '彩虹渐变', type: 'gradient', value: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-    { id: 'gradient2', name: '日落', type: 'gradient', value: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
-    { id: 'gradient3', name: '海洋', type: 'gradient', value: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
-    { id: 'gradient4', name: '森林', type: 'gradient', value: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
-    { id: 'solid1', name: '深蓝', type: 'color', value: '#1e3a8a' },
-    { id: 'solid2', name: '深紫', type: 'color', value: '#581c87' },
-    { id: 'solid3', name: '深绿', type: 'color', value: '#064e3b' },
-    { id: 'solid4', name: '深红', type: 'color', value: '#7f1d1d' }
+    { id: 'pic1', name: '山峦', type: 'image', value: '/picture/mountain.jpg' },
+    { id: 'pic3', name: '桥', type: 'image', value: '/picture/bridge.jpg' },
+    { id: 'pic4', name: '森林', type: 'image', value: '/picture/forest.jpg' },
+    { id: 'pic5', name: '沙滩', type: 'image', value: '/picture/beach.jpg' },
+    { id: 'pic6', name: '海洋', type: 'image', value: '/picture/ocean.jpg' },
+    { id: 'pic7', name: '独树', type: 'image', value: '/picture/tree.jpg' }
 ];
 
 const presetVideos = [
-    { id: 'video1', name: '上杉绘梨衣', type: 'video', value: 'video/上杉绘梨衣.mp4', thumbnail: 'video/上杉绘梨衣.mp4' },
-    { id: 'video_elaina1', name: '伊蕾娜1', type: 'video', value: 'video/伊蕾娜1.mp4', thumbnail: 'video/伊蕾娜1.mp4' },
-    { id: 'video_elaina2', name: '伊蕾娜2', type: 'video', value: 'video/伊蕾娜2.mp4', thumbnail: 'video/伊蕾娜2.mp4' },
-    { id: 'video_elaina3', name: '伊蕾娜3', type: 'video', value: 'video/伊蕾娜3.mp4', thumbnail: 'video/伊蕾娜3.mp4' },
-    { id: 'video_keqing', name: '刻晴', type: 'video', value: 'video/刻晴.mp4', thumbnail: 'video/刻晴.mp4' },
-    { id: 'video_xi', name: '囍', type: 'video', value: 'video/囍.mp4', thumbnail: 'video/囍.mp4' },
-    { id: 'video3', name: '心海', type: 'video', value: 'video/心海.mp4', thumbnail: 'video/心海.mp4' },
-    { id: 'video_jiangnan', name: '江南烧酒', type: 'video', value: 'video/江南烧酒.mp4', thumbnail: 'video/江南烧酒.mp4' },
-    { id: 'video4', name: '藿藿', type: 'video', value: 'video/藿藿.mp4', thumbnail: 'video/藿藿.mp4' },
-    { id: 'video5', name: '胡桃', type: 'video', value: 'video/胡桃.mp4', thumbnail: 'video/胡桃.mp4' },
-    { id: 'video_witch', name: '魔女', type: 'video', value: 'video/魔女.mp4', thumbnail: 'video/魔女.mp4' },
-    { id: 'video_luming', name: '鹿鸣', type: 'video', value: 'video/鹿鸣.mp4', thumbnail: 'video/鹿鸣.mp4' }
+    { id: 'video1', name: '上杉绘梨衣', type: 'video', value: '/video/eriyi.mp4', thumbnail: '/video/eriyi.mp4' },
+    { id: 'video_elaina1', name: '伊蕾娜1', type: 'video', value: '/video/elaina1.mp4', thumbnail: '/video/elaina1.mp4' },
+    { id: 'video_elaina2', name: '伊蕾娜2', type: 'video', value: '/video/elaina2.mp4', thumbnail: '/video/elaina2.mp4' },
+    { id: 'video_elaina3', name: '伊蕾娜3', type: 'video', value: '/video/elaina3.mp4', thumbnail: '/video/elaina3.mp4' },
+    { id: 'video_keqing', name: '刻晴', type: 'video', value: '/video/keqing.mp4', thumbnail: '/video/keqing.mp4' },
+    { id: 'video_xi', name: '囍', type: 'video', value: '/video/xi.mp4', thumbnail: '/video/xi.mp4' },
+    { id: 'video3', name: '心海', type: 'video', value: '/video/kokomi.mp4', thumbnail: '/video/kokomi.mp4' },
+    { id: 'video_jiangnan', name: '江南烧酒', type: 'video', value: '/video/jiangnan.mp4', thumbnail: '/video/jiangnan.mp4' },
+    { id: 'video4', name: '藿藿', type: 'video', value: '/video/huohuo.mp4', thumbnail: '/video/huohuo.mp4' },
+    { id: 'video5', name: '胡桃', type: 'video', value: '/video/hutao.mp4', thumbnail: '/video/hutao.mp4' },
+    { id: 'video_witch', name: '魔女', type: 'video', value: '/video/witch.mp4', thumbnail: '/video/witch.mp4' },
+    { id: 'video_luming', name: '鹿鸣', type: 'video', value: '/video/luming.mp4', thumbnail: '/video/luming.mp4' }
 ];
 
 const presetColors = [
@@ -55,8 +53,8 @@ export function applyBackground() {
         updates['--bg-image'] = 'none';
         needsVideoCleanup = false;
     } else if (currentBgType === 'image' && currentBg) {
-        updates['--bg-image'] = `url(${currentBg})`;
-        updates['--bg'] = 'none';
+        updates['--bg-image'] = `url("${currentBg}")`;
+        updates['--bg'] = 'transparent';
         updates['--bg-size'] = 'cover';
         updates['--bg-pos'] = 'center center';
     } else if (currentBgType === 'gradient' && currentBg) {
@@ -149,9 +147,63 @@ export async function loadSavedBackground() {
     }
 
     const bgType = localStorage.getItem('startpage.bgType') || 'color';
+    let localBg = localStorage.getItem('startpage.bg');
+
+    // Migration for legacy Chinese filenames
+    const legacyBackgroundMap = {
+        'picture/%E5%B1%B1%E5%B3%A6.jpg': '/picture/mountain.jpg',
+        'picture/%E6%A1%A5.jpg': '/picture/bridge.jpg',
+        'picture/%E6%A3%AE%E6%9E%97.jpg': '/picture/forest.jpg',
+        'picture/%E6%B2%99%E6%BB%A9.jpg': '/picture/beach.jpg',
+        'picture/%E7%8B%AC%E6%A0%91.jpg': '/picture/tree.jpg',
+        'picture/山峦.jpg': '/picture/mountain.jpg',
+        'picture/桥.jpg': '/picture/bridge.jpg',
+        'picture/森林.jpg': '/picture/forest.jpg',
+        'picture/沙滩.jpg': '/picture/beach.jpg',
+        'picture/独树.jpg': '/picture/tree.jpg',
+        // English relative paths to absolute paths
+        'picture/mountain.jpg': '/picture/mountain.jpg',
+        'picture/starry_night.jpg': '/picture/starry_night.jpg',
+        'picture/bridge.jpg': '/picture/bridge.jpg',
+        'picture/forest.jpg': '/picture/forest.jpg',
+        'picture/beach.jpg': '/picture/beach.jpg',
+        'picture/ocean.jpg': '/picture/ocean.jpg',
+        'picture/tree.jpg': '/picture/tree.jpg',
+        // Videos
+        'video/上杉绘梨衣.mp4': '/video/eriyi.mp4',
+        'video/伊蕾娜1.mp4': '/video/elaina1.mp4',
+        'video/伊蕾娜2.mp4': '/video/elaina2.mp4',
+        'video/伊蕾娜3.mp4': '/video/elaina3.mp4',
+        'video/刻晴.mp4': '/video/keqing.mp4',
+        'video/囍.mp4': '/video/xi.mp4',
+        'video/心海.mp4': '/video/kokomi.mp4',
+        'video/江南烧酒.mp4': '/video/jiangnan.mp4',
+        'video/藿藿.mp4': '/video/huohuo.mp4',
+        'video/胡桃.mp4': '/video/hutao.mp4',
+        'video/魔女.mp4': '/video/witch.mp4',
+        'video/鹿鸣.mp4': '/video/luming.mp4',
+        // English relative video paths
+        'video/eriyi.mp4': '/video/eriyi.mp4',
+        'video/elaina1.mp4': '/video/elaina1.mp4',
+        'video/elaina2.mp4': '/video/elaina2.mp4',
+        'video/elaina3.mp4': '/video/elaina3.mp4',
+        'video/keqing.mp4': '/video/keqing.mp4',
+        'video/xi.mp4': '/video/xi.mp4',
+        'video/kokomi.mp4': '/video/kokomi.mp4',
+        'video/jiangnan.mp4': '/video/jiangnan.mp4',
+        'video/huohuo.mp4': '/video/huohuo.mp4',
+        'video/hutao.mp4': '/video/hutao.mp4',
+        'video/witch.mp4': '/video/witch.mp4',
+        'video/luming.mp4': '/video/luming.mp4'
+    };
+
+    if (localBg && legacyBackgroundMap[localBg]) {
+        localBg = legacyBackgroundMap[localBg];
+        localStorage.setItem('startpage.bg', localBg);
+        console.log('Migrated legacy background path to:', localBg);
+    }
 
     if (bgType !== 'video') {
-        const localBg = localStorage.getItem('startpage.bg');
         if (localBg) {
             currentBg = localBg;
             currentBgType = bgType;
@@ -159,8 +211,6 @@ export async function loadSavedBackground() {
         }
         return;
     }
-
-    const localBg = localStorage.getItem('startpage.bg');
 
     if (localBg === 'INDEXED_DB_VIDEO') {
         try {
@@ -257,16 +307,23 @@ function generatePresetBackgrounds() {
     const grid = document.getElementById('presetsGrid');
     if (!grid) return;
     
+    // 优化：如果已经生成过，就不再重新生成
+    if (grid.children.length > 0) return;
+    
     grid.innerHTML = '';
     
     presetBackgrounds.forEach(bg => {
         const item = document.createElement('div');
         item.className = 'preset-item';
-        item.onclick = () => selectPresetBackground(bg);
+        item.onclick = (e) => selectPresetBackground(bg, e);
         
         const preview = document.createElement('div');
         preview.className = 'preset-preview';
-        if (bg.type === 'gradient') {
+        if (bg.type === 'image') {
+            preview.style.backgroundImage = `url("${bg.value}")`;
+            preview.style.backgroundSize = 'cover';
+            preview.style.backgroundPosition = 'center';
+        } else if (bg.type === 'gradient') {
             preview.style.background = bg.value;
         } else {
             preview.style.backgroundColor = bg.value;
@@ -284,13 +341,32 @@ function generatePresetBackgrounds() {
     presetVideos.forEach(bg => {
         const item = document.createElement('div');
         item.className = 'preset-item video-preset';
-        item.onclick = () => selectPresetBackground(bg);
+        item.onclick = (e) => selectPresetBackground(bg, e);
         
         const preview = document.createElement('div');
         preview.className = 'preset-preview video-preview';
-        preview.style.backgroundImage = `url(${bg.thumbnail})`;
-        preview.style.backgroundSize = 'cover';
-        preview.style.backgroundPosition = 'center';
+        
+        // 使用视频标签作为预览
+        const videoPreview = document.createElement('video');
+        videoPreview.src = bg.value;
+        videoPreview.muted = true;
+        videoPreview.loop = true;
+        videoPreview.playsInline = true;
+        videoPreview.preload = 'none'; // 优化：不预加载视频
+        videoPreview.style.width = '100%';
+        videoPreview.style.height = '100%';
+        videoPreview.style.objectFit = 'cover';
+        
+        // 鼠标悬停播放预览
+        item.addEventListener('mouseenter', () => {
+            videoPreview.play().catch(() => {});
+        });
+        item.addEventListener('mouseleave', () => {
+            videoPreview.pause();
+            videoPreview.currentTime = 0;
+        });
+
+        preview.appendChild(videoPreview);
         
         const playIcon = document.createElement('div');
         playIcon.className = 'play-icon';
@@ -311,7 +387,7 @@ function generatePresetBackgrounds() {
     });
 }
 
-function selectPresetBackground(bg) {
+function selectPresetBackground(bg, event) {
     const currentBgValue = localStorage.getItem('startpage.bg');
     if (currentBgValue === 'INDEXED_DB_VIDEO' && bg.type === 'video') {
         const confirmed = confirm('当前有自定义上传的视频背景，切换到预设视频会丢失。确定要切换吗？');
@@ -322,7 +398,9 @@ function selectPresetBackground(bg) {
         item.classList.remove('selected');
     });
     
-    event.currentTarget.classList.add('selected');
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.add('selected');
+    }
     
     currentBg = bg.value;
     currentBgType = bg.type;
@@ -333,7 +411,6 @@ function selectPresetBackground(bg) {
     
     showToast(`已应用${bg.name}背景`);
     closeBackgroundDialog();
-    setTimeout(() => location.reload(), 500);
 }
 
 function resetCustomUpload() {
@@ -351,7 +428,6 @@ export function resetBackground() {
     localStorage.removeItem('startpage.bgType');
     showToast('背景已重置');
     closeBackgroundDialog();
-    setTimeout(() => location.reload(), 500);
 }
 
 function handleFileUpload(file) {
@@ -458,7 +534,6 @@ async function processVideoFile(file) {
         localStorage.setItem('startpage.bg', 'INDEXED_DB_VIDEO');
         
         showToast('✅ 视频背景已应用并永久保存');
-        setTimeout(() => location.reload(), 500);
         
     } catch (error) {
         showToast('视频背景应用失败: ' + error.message);
@@ -503,15 +578,14 @@ function processImageFile(file) {
                 });
                 closeBackgroundDialog();
                 showToast('自定义背景已应用并保存 ✓');
-                setTimeout(() => location.reload(), 500);
                 
             } catch (error) {
                 if (error.name === 'QuotaExceededError') {
                     try {
                         await saveBackgroundToDB(currentBg, currentBgType);
+                        localStorage.setItem('startpage.bg', 'INDEXED_DB_VIDEO'); // 使用统一的标记
                         closeBackgroundDialog();
                         showToast('背景已应用并保存到IndexedDB ✓');
-                        setTimeout(() => location.reload(), 500);
                     } catch (dbError) {
                         if (file instanceof Blob) {
                             const originalFile = new File([file], 'compressed.jpg', { type: 'image/jpeg' });
@@ -584,7 +658,6 @@ function handleUrlBackground() {
         
         closeBackgroundDialog();
         showToast(isVideo ? '视频背景已应用并保存 ✓' : '背景已应用并保存 ✓');
-        setTimeout(() => location.reload(), 500);
     } catch (error) {
         showToast('应用背景失败: ' + error.message);
     }

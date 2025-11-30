@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>红柚起始页</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/main.css">
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="icon.png">
 </head>
@@ -257,11 +257,29 @@
       </header>
   
       <div class="bg-content" style="padding: 20px;">
+        <div class="appearance-section" style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="margin: 0; font-size: 14px; color: var(--muted);">全局样式</h4>
+          </div>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer;">
+            <input type="checkbox" id="showGlassCardCheck" checked> 显示组件背景框 (磨砂玻璃)
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; margin-top: 8px;">
+            <input type="checkbox" id="showWeatherCheck" checked> 显示天气
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; margin-top: 8px;">
+            <input type="checkbox" id="showMusicPlayerCheck" checked> 显示音乐悬浮窗
+          </label>
+        </div>
+
         <div class="appearance-section">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <h4 style="margin: 0; font-size: 14px; color: var(--muted);">时钟</h4>
             <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
               <input type="checkbox" id="showClockCheck" checked> 显示
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; margin-left: 12px;">
+              <input type="checkbox" id="showSecondsCheck"> 显示秒数
             </label>
           </div>
           <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
@@ -349,6 +367,11 @@
             <h4 style="margin: 0; font-size: 14px; color: var(--muted);">搜索框</h4>
             <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
               <input type="checkbox" id="showSearchCheck" checked> 显示
+            </label>
+          </div>
+          <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; width: 100%;">
+              <input type="checkbox" id="showSearchBtnCheck" checked> 显示搜索按钮
             </label>
           </div>
           <div class="control-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
@@ -884,7 +907,8 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+  <script type="module" src="js/main.js"></script>
   <div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
 </body>
 </html>

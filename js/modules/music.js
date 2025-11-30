@@ -1,6 +1,6 @@
 
 import { $, showToast, formatTime } from './utils.js';
-import { fetchMusicPlaylist } from './api.js';
+import { fetchMusicPlaylist } from '../api/api.js';
 
 const ambientSounds = [
   { 
@@ -236,8 +236,14 @@ export function initSoundPanel() {
   if (fpList) fpList.addEventListener('click', (e) => {
       e.stopPropagation();
       soundPanel.classList.remove('hidden');
-      const musicTab = document.querySelector('[data-tab="music"]');
-      if (musicTab) musicTab.click();
+      
+      if (currentSoundId) {
+          const ambientTab = document.querySelector('[data-tab="ambient"]');
+          if (ambientTab) ambientTab.click();
+      } else {
+          const musicTab = document.querySelector('[data-tab="music"]');
+          if (musicTab) musicTab.click();
+      }
   });
 }
 
@@ -532,6 +538,11 @@ function updatePlayModeUI() {
 }
 
 function toggleMusicPlay() {
+    if (currentSoundId) {
+        stopSound();
+        return;
+    }
+
     if (musicState.isPlaying) {
         pauseMusic();
     } else {
@@ -540,6 +551,10 @@ function toggleMusicPlay() {
 }
 
 function playMusic() {
+    if (currentSoundId) {
+        stopSound();
+    }
+
     const track = musicState.playlist[musicState.currentIndex];
     if (!track) return;
     
@@ -612,6 +627,13 @@ function pauseMusic() {
 }
 
 function previousMusic() {
+    if (currentSoundId) {
+        const currentIndex = ambientSounds.findIndex(s => s.id === currentSoundId);
+        const newIndex = (currentIndex - 1 + ambientSounds.length) % ambientSounds.length;
+        toggleSound(ambientSounds[newIndex].id);
+        return;
+    }
+
     if (musicState.playlist.length === 0) return;
     
     if (musicState.playMode === 'random') {
@@ -630,6 +652,13 @@ function previousMusic() {
 }
 
 function nextMusic(isManual = false) {
+    if (currentSoundId) {
+        const currentIndex = ambientSounds.findIndex(s => s.id === currentSoundId);
+        const newIndex = (currentIndex + 1) % ambientSounds.length;
+        toggleSound(ambientSounds[newIndex].id);
+        return;
+    }
+
     if (musicState.playlist.length === 0) return;
     
     if (musicState.playMode === 'single' && !isManual) {
@@ -659,6 +688,15 @@ function updatePlayButtonIcon() {
     
     const fpPlayIcon = document.getElementById('fpPlayIcon');
     const fpPauseIcon = document.getElementById('fpPauseIcon');
+    
+    if (currentSoundId) {
+        if(playIcon) playIcon.style.display = 'block';
+        if(pauseIcon) pauseIcon.style.display = 'none';
+
+        if(fpPlayIcon) fpPlayIcon.classList.add('hidden');
+        if(fpPauseIcon) fpPauseIcon.classList.remove('hidden');
+        return;
+    }
     
     if (musicState.isPlaying) {
         if(playIcon) playIcon.style.display = 'none';
@@ -710,6 +748,10 @@ function toggleSound(soundId) {
 }
 
 function playSound(sound) {
+  if (musicState.isPlaying) {
+      pauseMusic();
+  }
+
   try {
     currentAudio = new Audio(sound.url);
     currentAudio.loop = true;
@@ -718,6 +760,7 @@ function playSound(sound) {
     currentAudio.play().then(() => {
       currentSoundId = sound.id;
       updateSoundUI();
+      updateFloatingPlayerForAmbient(sound);
       showToast(`正在播放: ${sound.name}`, 1500);
     }).catch(error => {
       showToast('播放失败，请重试', 2000);
@@ -737,6 +780,26 @@ function stopSound() {
   }
   currentSoundId = null;
   updateSoundUI();
+  
+  const fp = document.getElementById('floatingPlayer');
+  if (fp) fp.classList.add('hidden');
+  updatePlayButtonIcon();
+}
+
+function updateFloatingPlayerForAmbient(sound) {
+    const fp = document.getElementById('floatingPlayer');
+    const fpTitle = document.getElementById('fpTitle');
+    const fpArtist = document.getElementById('fpArtist');
+    const fpCover = document.querySelector('.fp-cover');
+
+    if (!fp) return;
+
+    fp.classList.remove('hidden');
+    if (fpTitle) fpTitle.textContent = sound.name;
+    if (fpArtist) fpArtist.textContent = "白噪音";
+    if (fpCover) fpCover.style.background = 'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)';
+    
+    updatePlayButtonIcon();
 }
 
 function updateSoundUI() {
