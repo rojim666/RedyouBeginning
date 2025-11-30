@@ -1,0 +1,39 @@
+.container{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+.center{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start; /* 改为顶部对齐，方便快速搜索 */
+  padding: 120px 24px 48px; /* 增加顶部padding */
+}
+
+/* Footer - 苹果简约风格 */
+.footer{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 20px;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: -0.01em;
+  opacity: 0.6;
+  animation: fadeIn 1s cubic-bezier(0.28, 0.11, 0.32, 1) 0.8s both;
+}
+
+.footer-logo {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.footer small{
+  font-weight: 400;
+}

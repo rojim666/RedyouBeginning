@@ -1,0 +1,811 @@
+/* 专注按钮特殊动画 */
+#focusBtn:hover svg{
+  animation: tomatoWiggle 0.5s ease-in-out;
+}
+
+@keyframes tomatoWiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg) scale(1.05); }
+  75% { transform: rotate(5deg) scale(1.05); }
+}
+
+/* ==================== 专注空间样式 ==================== */
+.focus-mode{
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.4s cubic-bezier(0.28, 0.11, 0.32, 1);
+  overflow: hidden;
+}
+
+.focus-mode:not(.hidden){
+  opacity: 1;
+}
+
+/* 深色主题的专注空间背景 */
+[data-theme="dark"] .focus-mode{
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(40px) saturate(150%);
+  -webkit-backdrop-filter: blur(40px) saturate(150%);
+}
+
+/* 透明度控制条 */
+.focus-opacity-control{
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: var(--blur-md);
+  -webkit-backdrop-filter: var(--blur-md);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  transition: all 0.3s cubic-bezier(0.28, 0.11, 0.32, 1);
+}
+
+.focus-opacity-control:hover{
+  background: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="dark"] .focus-opacity-control{
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .focus-opacity-control:hover{
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.focus-opacity-control svg{
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .focus-opacity-control svg{
+  color: white;
+}
+
+#focusOpacitySlider{
+  width: 100px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+[data-theme="dark"] #focusOpacitySlider{
+  background: rgba(255, 255, 255, 0.2);
+}
+
+#focusOpacitySlider::-webkit-slider-thumb{
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #007AFF;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#focusOpacitySlider::-webkit-slider-thumb:hover{
+  transform: scale(1.2);
+  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.2);
+}
+
+#focusOpacitySlider::-moz-range-thumb{
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #007AFF;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#focusOpacitySlider::-moz-range-thumb:hover{
+  transform: scale(1.2);
+  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.2);
+}
+
+[data-theme="dark"] #focusOpacitySlider::-webkit-slider-thumb{
+  background: white;
+}
+
+[data-theme="dark"] #focusOpacitySlider::-moz-range-thumb{
+  background: white;
+}
+
+#focusOpacityValue{
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 40px;
+  text-align: right;
+}
+
+[data-theme="dark"] #focusOpacityValue{
+  color: white;
+}
+
+.exit-focus-btn{
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.05);
+  backdrop-filter: var(--blur-md);
+  -webkit-backdrop-filter: var(--blur-md);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.28, 0.11, 0.32, 1);
+  z-index: 10;
+}
+
+.exit-focus-btn:hover{
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(1.1);
+}
+
+[data-theme="dark"] .exit-focus-btn{
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+[data-theme="dark"] .exit-focus-btn:hover{
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.exit-focus-btn:active{
+  transform: scale(0.95);
+}
+
+.focus-container{
+  width: 90%;
+  max-width: 1000px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  padding: 40px;
+  animation: fadeIn 0.6s cubic-bezier(0.28, 0.11, 0.32, 1) 0.2s both;
+}
+
+/* 专注计时器区域 */
+.focus-timer-section{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.focus-timer-wrapper{
+  position: relative;
+  width: 280px;
+  height: 280px;
+}
+
+/* SVG圆形进度条 */
+.focus-progress-ring{
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.progress-ring-bg{
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.08);
+  stroke-width: 8;
+}
+
+.progress-ring-circle{
+  fill: none;
+  stroke: #007AFF;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 534.07; /* 2 * PI * 85 */
+  stroke-dashoffset: 534.07;
+  transition: stroke-dashoffset 1s linear;
+}
+
+/* 时钟刻度装饰 */
+.clock-ticks{
+  color: rgba(0, 0, 0, 0.3);
+  animation: clockTickPulse 3s ease-in-out infinite;
+}
+
+/* 深色主题下的进度条 */
+[data-theme="dark"] .progress-ring-bg{
+  stroke: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .progress-ring-circle{
+  stroke: white;
+}
+
+[data-theme="dark"] .clock-ticks{
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* 深色模式文字背景增强 */
+[data-theme="dark"] .clock,
+[data-theme="dark"] .greeting,
+[data-theme="dark"] .quote {
+  background-color: transparent;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes clockTickPulse {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.25; }
+}
+
+.focus-timer-content{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.focus-time-display{
+  font-size: 56px;
+  font-weight: 700;
+  font-family: var(--font-family);
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
+}
+
+.focus-timer-label{
+  font-size: 16px;
+  font-weight: 500;
+  opacity: 0.6;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* 深色主题下的文字 */
+[data-theme="dark"] .focus-timer-content{
+  color: white;
+}
+
+[data-theme="dark"] .focus-time-display{
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .focus-timer-label{
+  opacity: 0.8;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* 控制按钮 */
+.focus-controls{
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.focus-btn{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.28, 0.11, 0.32, 1);
+}
+
+.focus-btn-primary{
+  background: #007AFF;
+  color: white;
+  box-shadow: 0 4px 20px rgba(0, 122, 255, 0.3);
+}
+
+.focus-btn-primary:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(0, 122, 255, 0.4);
+}
+
+.focus-btn-secondary{
+  background: rgba(0, 0, 0, 0.05);
+  backdrop-filter: var(--blur-md);
+  -webkit-backdrop-filter: var(--blur-md);
+  color: var(--text-primary);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.focus-btn-secondary:hover{
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* 深色主题下的按钮 */
+[data-theme="dark"] .focus-btn-primary{
+  background: white;
+  color: #1a1a1a;
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .focus-btn-primary:hover{
+  box-shadow: 0 6px 24px rgba(255, 255, 255, 0.3);
+}
+
+[data-theme="dark"] .focus-btn-secondary{
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .focus-btn-secondary:hover{
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.focus-btn:active{
+  transform: scale(0.96);
+}
+
+/* 时长选择 */
+.focus-duration-select{
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  background: rgba(0, 0, 0, 0.05);
+  backdrop-filter: var(--blur-md);
+  -webkit-backdrop-filter: var(--blur-md);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.duration-btn{
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.28, 0.11, 0.32, 1);
+}
+
+.duration-btn:hover{
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.duration-btn.active{
+  background: #007AFF;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+}
+
+/* 深色主题下的时长选择 */
+[data-theme="dark"] .focus-duration-select{
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .duration-btn{
+  color: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="dark"] .duration-btn:hover{
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .duration-btn.active{
+  background: white;
+  color: #1a1a1a;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.3);
+}
+
+.duration-btn:hover{
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.duration-btn.active{
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+/* 专注任务区域 */
+.focus-tasks-section{
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: var(--blur-lg);
+  -webkit-backdrop-filter: var(--blur-lg);
+  border-radius: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 400px;
+}
+
+.focus-tasks-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.focus-tasks-header h3{
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.add-task-btn{
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.28, 0.11, 0.32, 1);
+}
+
+.add-task-btn:hover{
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(1.1);
+}
+
+/* 深色主题下的任务区域 */
+[data-theme="dark"] .focus-tasks-section{
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .focus-tasks-header h3{
+  color: white;
+}
+
+[data-theme="dark"] .add-task-btn{
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+[data-theme="dark"] .add-task-btn:hover{
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.focus-tasks-list{
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.focus-tasks-list::-webkit-scrollbar{
+  width: 6px;
+}
+
+.focus-tasks-list::-webkit-scrollbar-track{
+  background: transparent;
+}
+
+.focus-tasks-list::-webkit-scrollbar-thumb{
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+
+[data-theme="dark"] .focus-tasks-list::-webkit-scrollbar-thumb{
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.focus-task-item{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  transition: all 0.2s cubic-bezier(0.28, 0.11, 0.32, 1);
+}
+
+.focus-task-item:hover{
+  background: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="dark"] .focus-task-item{
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .focus-task-item:hover{
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.task-checkbox{
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.task-checkbox:hover{
+  border-color: #007AFF;
+}
+
+.task-checkbox.checked{
+  background: #007AFF;
+  border-color: #007AFF;
+  position: relative;
+}
+
+.task-checkbox.checked::after{
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* 深色主题下的复选框 */
+[data-theme="dark"] .task-checkbox{
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+[data-theme="dark"] .task-checkbox:hover{
+  border-color: white;
+}
+
+[data-theme="dark"] .task-checkbox.checked{
+  background: white;
+  border-color: white;
+}
+
+[data-theme="dark"] .task-checkbox.checked::after{
+  color: #1a1a1a;
+}
+
+.task-text{
+  flex: 1;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .task-text{
+  color: white;
+}
+
+.task-text.completed{
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.task-delete{
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.05);
+  border: none;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s;
+  font-size: 16px;
+}
+
+.focus-task-item:hover .task-delete{
+  opacity: 1;
+}
+
+.task-delete:hover{
+  background: rgba(255, 59, 48, 0.8);
+  color: white;
+}
+
+/* 深色主题下的删除按钮 */
+[data-theme="dark"] .task-delete{
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+[data-theme="dark"] .task-delete:hover{
+  background: rgba(255, 59, 48, 0.8);
+}
+
+.new-task-input{
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font-family);
+  outline: none;
+  transition: all 0.2s;
+}
+
+.new-task-input::placeholder{
+  color: rgba(0, 0, 0, 0.4);
+}
+
+.new-task-input:focus{
+  background: white;
+  border-color: #007AFF;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+/* 深色主题下的输入框 */
+[data-theme="dark"] .new-task-input{
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+[data-theme="dark"] .new-task-input::placeholder{
+  color: rgba(255, 255, 255, 0.5);
+}
+
+[data-theme="dark"] .new-task-input:focus{
+  background: rgba(255, 255, 255, 0.2);
+  border-color: white;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+}
+
+/* 专注统计区域 */
+.focus-stats-section{
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+}
+
+.focus-quote{
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-style: italic;
+  opacity: 0.7;
+  text-align: center;
+  letter-spacing: -0.01em;
+}
+
+[data-theme="dark"] .focus-quote{
+  color: white;
+  opacity: 0.9;
+}
+
+.focus-stats{
+  display: flex;
+  gap: 32px;
+}
+
+.stat-item{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: var(--blur-md);
+  -webkit-backdrop-filter: var(--blur-md);
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .stat-item{
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.stat-icon{
+  font-size: 32px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-icon svg{
+  display: block;
+}
+
+.stat-info{
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-value{
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  letter-spacing: -0.02em;
+}
+
+[data-theme="dark"] .stat-value{
+  color: white;
+}
+
+.stat-label{
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+[data-theme="dark"] .stat-label{
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* 移动端适配 */
+@media (max-width: 768px){
+  .focus-container{
+    grid-template-columns: 1fr;
+    padding: 24px;
+    gap: 24px;
+  }
+  
+  .focus-timer-wrapper{
+    width: 240px;
+    height: 240px;
+  }
+  
+  .focus-time-display{
+    font-size: 48px;
+  }
+  
+  .focus-stats{
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+  
+  .stat-item{
+    width: 100%;
+    justify-content: center;
+  }
+}

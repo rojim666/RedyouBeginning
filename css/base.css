@@ -1,0 +1,131 @@
+/* 通用工具类 */
+.hidden {
+  display: none !important;
+}
+
+*{
+  box-sizing: border-box;
+  /* 苹果系统字体 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,body{
+  height:100%;
+  transition:var(--theme-transition);
+  /* 防止黑色闪烁：使用深灰色作为占位符 */
+  background: #f5f7fa;
+}
+
+[data-theme="dark"] html {
+  background: #1c1c1e;
+}
+
+[data-theme="dark"] body {
+  background: var(--bg-image), var(--bg);
+  background-attachment: fixed;
+  background-size: var(--bg-size, cover);
+  background-position: var(--bg-pos, center center);
+}
+
+body{
+  margin:0;
+  /* SF Pro 字体系列（苹果系统字体） */
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  color:var(--text);
+  background: var(--bg-image), var(--bg);
+  background-attachment: fixed;
+  background-size: var(--bg-size, cover);
+  background-position: var(--bg-pos, center center);
+  transition: background var(--theme-transition), color var(--theme-transition), background-color var(--theme-transition);
+  will-change: background;
+}
+
+/* 苹果风格按钮 */
+.btn{
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 0;
+  background: var(--btn-bg);
+  backdrop-filter: var(--blur-sm);
+  -webkit-backdrop-filter: var(--blur-sm);
+  cursor: pointer;
+  color: var(--control-text);
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s cubic-bezier(0.28, 0.11, 0.32, 1);
+  letter-spacing: -0.01em;
+}
+
+.btn:hover{
+  background: var(--btn-secondary-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.btn:active{
+  transform: translateY(0) scale(0.98);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn.primary{
+  background: linear-gradient(135deg, var(--accent) 0%, #0051D5 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 12px 24px; /* 调整padding与输入框对齐 */
+  box-shadow: 0 6px 20px var(--btn-primary-shadow), 0 2px 8px rgba(0, 122, 255, 0.3);
+}
+
+.btn.primary:hover{
+  background: linear-gradient(135deg, #0084FF 0%, #0066FF 100%);
+  box-shadow: 0 8px 24px var(--btn-primary-shadow), 0 4px 12px rgba(0, 122, 255, 0.4);
+  transform: translateY(-3px) scale(1.02);
+}
+
+.btn.primary:active{
+  transform: translateY(-1px) scale(0.98);
+  box-shadow: 0 3px 12px var(--btn-primary-shadow);
+}
+
+.btn.secondary{
+  background:var(--control-bg);
+  color:var(--control-text);
+  border:1px solid var(--control-border);
+}
+
+.btn.small{
+  padding:6px 10px;
+  font-size:12px;
+}
+
+/* 动画定义 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dialogContentPop{
+  from{
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to{
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+@keyframes shimmer{
+  0%{ transform: translateX(-100%) }
+  100%{ transform: translateX(100%) }
+}
