@@ -1,5 +1,6 @@
 
 import { $, showToast, formatTime } from './utils.js';
+import { fetchMusicPlaylist } from './api.js';
 
 const ambientSounds = [
   { 
@@ -245,98 +246,20 @@ async function fetchNeteaseMusicList(id) {
         const customApi = localStorage.getItem('startpage.musicApi');
         const customCookie = localStorage.getItem('startpage.musicCookie');
         
-        if (customApi) {
-            let playlistUrl = `${customApi}/playlist/track/all?id=${id}&limit=1000&offset=0`;
-            if (customCookie) {
-                playlistUrl += `&cookie=${encodeURIComponent(customCookie)}`;
-            }
-            
-            const response = await fetch(playlistUrl);
-            if (!response.ok) throw new Error(`自定义 API HTTP ${response.status}`);
-            
-            const data = await response.json();
-            
-            if (data.songs && Array.isArray(data.songs)) {
-                const trackIds = data.songs.map(s => s.id).join(',');
-                let songUrlApi = `${customApi}/song/url?id=${trackIds}`;
-                if (customCookie) songUrlApi += `&cookie=${encodeURIComponent(customCookie)}`;
-                
-                const urlResponse = await fetch(songUrlApi);
-                const urlData = await urlResponse.json();
-                const urlMap = {};
-                if (urlData.data) {
-                    urlData.data.forEach(u => urlMap[u.id] = u.url);
-                }
-                
-                return data.songs.map(track => ({
-                    id: track.id,
-                    name: track.name,
-                    artist: track.ar ? track.ar.map(a => a.name).join('/') : '未知歌手',
-                    album: track.al ? track.al.name : '未知专辑',
-                    duration: track.dt,
-                    url: urlMap[track.id],
-                    cover: track.al ? track.al.picUrl : null,
-                    lrc: null
-                })).filter(t => t.url);
-            }
+        const playlist = await fetchMusicPlaylist(id, customApi, customCookie);
+        
+        if (playlist.length === 0) {
+             // If empty, it might be due to error caught inside fetchMusicPlaylist or actually empty
+             // We can try to show a toast if we want, but the UI handles empty list
         }
-        
-        const apiUrl = `https://api.i-meto.com/meting/api?server=netease&type=playlist&id=${id}`;
-        
-        const response = await fetch(apiUrl);
-        
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
-        const data = await response.json();
-        
-        if (Array.isArray(data) && data.length > 0) {
-            return data.map((track, index) => ({
-                id: index,
-                name: track.title || '未知歌曲',
-                artist: track.author || '未知歌手',
-                album: '在线音乐',
-                duration: 0,
-                url: track.url,
-                cover: track.pic,
-                lrc: track.lrc
-            }));
-        } else {
-            return await fetchNeteaseMusicListBackup(id);
-        }
+        return playlist;
     } catch (error) {
-        return await fetchNeteaseMusicListBackup(id);
-    }
-}
-
-async function fetchNeteaseMusicListBackup(id) {
-    try {
-        const apiUrl = `https://api.injahow.cn/meting/?type=playlist&id=${id}`;
-        const response = await fetch(apiUrl);
-        
-        if (!response.ok) throw new Error(`备用 API HTTP ${response.status}`);
-        
-        const data = await response.json();
-        
-        if (Array.isArray(data) && data.length > 0) {
-            return data.map((track, index) => ({
-                id: index,
-                name: track.name || track.title || '未知歌曲',
-                artist: track.artist || track.author || '未知歌手',
-                album: '在线音乐',
-                duration: 0,
-                url: track.url,
-                cover: track.pic || track.cover,
-                lrc: track.lrc
-            }));
-        } else {
-            showToast('歌单为空或受版权保护');
-            return [];
-        }
-    } catch (error) {
-        showToast('获取歌单失败：无法连接到 API 服务');
+        console.error('Fetch music list error:', error);
         return [];
     }
 }
+
+// Removed fetchNeteaseMusicListBackup as it is now integrated into api.js
 
 export async function loadNeteaseMusic(id) {
     const container = document.getElementById('musicPlayerContainer');

@@ -4,6 +4,7 @@ import { initFocusMode } from './focus.js';
 import { renderLinksEditor } from './links.js';
 import { renderBookmarksEditor } from './bookmarks.js';
 import { openBackgroundDialog } from './background.js';
+import { fetchQuote } from './api.js';
 
 export function initSettings() {
   const settingsBtn = $('#settingsBtn');
@@ -153,6 +154,7 @@ function initAppearanceSettings() {
   if (!appearanceDialog) return;
   
   const defaults = {
+    showGlassCard: true,
     clockSize: 48,
     clockTextOpacity: 100,
     clockBgOpacity: 80,
@@ -209,6 +211,7 @@ function initAppearanceSettings() {
   };
 
   const checkboxes = {
+    showGlassCard: document.getElementById('showGlassCardCheck'),
     showClock: document.getElementById('showClockCheck'),
     showGreeting: document.getElementById('showGreetingCheck'),
     showQuote: document.getElementById('showQuoteCheck'),
@@ -235,6 +238,22 @@ function initAppearanceSettings() {
   function applySettings(newSettings) {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const baseColor = isDark ? '28, 28, 30' : '255, 255, 255';
+
+    const applyGlassEffect = (el, bgOpacity) => {
+      if (newSettings.showGlassCard) {
+        el.style.background = `linear-gradient(135deg, rgba(${baseColor}, ${bgOpacity/100}) 0%, rgba(255,255,255, 0.05) 100%)`;
+        el.style.backdropFilter = '';
+        el.style.webkitBackdropFilter = '';
+        el.style.border = '';
+        el.style.boxShadow = '';
+      } else {
+        el.style.background = 'transparent';
+        el.style.backdropFilter = 'none';
+        el.style.webkitBackdropFilter = 'none';
+        el.style.border = 'none';
+        el.style.boxShadow = 'none';
+      }
+    };
     
     if (elements.clock) elements.clock.style.display = newSettings.showClock ? '' : 'none';
     if (elements.greeting) elements.greeting.style.display = newSettings.showGreeting ? '' : 'none';
@@ -250,9 +269,28 @@ function initAppearanceSettings() {
 
     if (elements.clock) {
       elements.clock.style.fontSize = `${newSettings.clockSize}px`;
+      
+      // Ensure span exists for gradient text
+      let clockSpan = elements.clock.querySelector('span');
+      if (!clockSpan) {
+        elements.clock.innerHTML = `<span>${elements.clock.textContent}</span>`;
+        clockSpan = elements.clock.querySelector('span');
+      }
+
       const textColor = newSettings.clockColor || 'var(--text)';
-      elements.clock.style.color = `color-mix(in srgb, ${textColor}, transparent ${100 - newSettings.clockTextOpacity}%)`;
-      elements.clock.style.background = `linear-gradient(135deg, rgba(${baseColor}, ${newSettings.clockBgOpacity/100}) 0%, rgba(255,255,255, 0.05) 100%)`;
+      const opacity = newSettings.clockTextOpacity;
+      
+      // Gradient effect: Top color to slightly faded bottom color
+      const startColor = `color-mix(in srgb, ${textColor}, transparent ${100 - opacity}%)`;
+      const endColor = `color-mix(in srgb, ${textColor}, transparent ${100 - (opacity * 0.7)}%)`;
+      
+      clockSpan.style.background = `linear-gradient(180deg, ${startColor} 0%, ${endColor} 100%)`;
+      clockSpan.style.webkitBackgroundClip = 'text';
+      clockSpan.style.webkitTextFillColor = 'transparent';
+      clockSpan.style.backgroundClip = 'text';
+      clockSpan.style.color = 'transparent';
+      
+      applyGlassEffect(elements.clock, newSettings.clockBgOpacity);
       elements.clock.style.opacity = '';
     }
     
@@ -260,12 +298,12 @@ function initAppearanceSettings() {
       elements.greeting.style.fontSize = `${newSettings.greetingSize}px`;
       const textColor = newSettings.greetingColor || 'var(--text)';
       elements.greeting.style.color = `color-mix(in srgb, ${textColor}, transparent ${100 - newSettings.greetingTextOpacity}%)`;
-      elements.greeting.style.background = `linear-gradient(135deg, rgba(${baseColor}, ${newSettings.greetingBgOpacity/100}) 0%, rgba(255,255,255, 0.05) 100%)`;
+      applyGlassEffect(elements.greeting, newSettings.greetingBgOpacity);
       elements.greeting.style.opacity = '';
     }
     
     if (elements.quote) {
-      elements.quote.style.background = `linear-gradient(135deg, rgba(${baseColor}, ${newSettings.quoteBgOpacity/100}) 0%, rgba(255,255,255, 0.05) 100%)`;
+      applyGlassEffect(elements.quote, newSettings.quoteBgOpacity);
       elements.quote.style.opacity = '';
       if (elements.quoteText) {
          const textColor = newSettings.quoteColor || 'var(--text)';
@@ -537,18 +575,9 @@ export async function loadQuote() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     
-    const response = await fetch('https://api.nxvav.cn/api/yiyan/?encode=json&charset=utf-8', {
-      method: 'GET',
-      signal: controller.signal
-    });
+    const result = await fetchQuote();
     
     clearTimeout(timeoutId);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const result = await response.json();
     
     if (result && result.yiyan) {
       quoteText.textContent = `"${result.yiyan}"`;
@@ -603,8 +632,14 @@ export function updateClock() {
   const now = new Date();
   const hours = String(now.getHours()).padStart(2, '0');
   const minutes = String(now.getMinutes()).padStart(2, '0');
+  const timeStr = `${hours}:${minutes}`;
   
-  clockEl.textContent = `${hours}:${minutes}`;
+  const span = clockEl.querySelector('span');
+  if (span) {
+    span.textContent = timeStr;
+  } else {
+    clockEl.innerHTML = `<span>${timeStr}</span>`;
+  }
 }
 
 export function initThemeToggle() {

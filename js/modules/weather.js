@@ -1,5 +1,6 @@
 
 import { $, showToast } from './utils.js';
+import { fetchWeather, fetchLocationName } from './api.js';
 
 let weatherData = null;
 
@@ -45,26 +46,15 @@ export function initWeather() {
 
 async function getLocationName(latitude, longitude) {
   try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=zh-CN`,
-      {
-        headers: {
-          'User-Agent': 'StartPage/1.0'
-        }
-      }
-    );
+    const data = await fetchLocationName(latitude, longitude);
+    const address = data.address;
     
-    if (response.ok) {
-      const data = await response.json();
-      const address = data.address;
-      
-      return address.city || 
-             address.county || 
-             address.state || 
-             address.province || 
-             address.country || 
-             '未知位置';
-    }
+    return address.city || 
+           address.county || 
+           address.state || 
+           address.province || 
+           address.country || 
+           '未知位置';
   } catch (error) {
     console.warn('获取位置名称失败:', error);
   }
@@ -87,13 +77,7 @@ function getWeather() {
         const locationName = await getLocationName(latitude, longitude);
         
         // Get weather data
-        const response = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m&daily=uv_index_max,sunrise,sunset&timezone=auto`
-        );
-        
-        if (!response.ok) throw new Error('天气获取失败');
-        
-        const data = await response.json();
+        const data = await fetchWeather(latitude, longitude);
         const current = data.current;
         const daily = data.daily;
         
