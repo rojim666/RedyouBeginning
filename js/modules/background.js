@@ -1,57 +1,25 @@
-import { $, showToast, smartCompress, compressImage } from './utils.js';
-import { initIndexedDB, saveBackgroundToDB, loadBackgroundFromDB, getDB } from './storage.js';
+
+import { $, showToast, compressImage } from './utils.js';
+import { initIndexedDB, saveBackgroundToDB, loadBackgroundFromDB } from './storage.js';
+import { BACKGROUND_CONFIG, STORAGE_KEYS } from '../config.js';
 
 let currentBg = '';
 let currentBgType = 'color';
 
-const presetBackgrounds = [
-    { id: 'pic1', name: '山峦', type: 'image', value: '/picture/mountain.jpg' },
-    { id: 'pic3', name: '桥', type: 'image', value: '/picture/bridge.jpg' },
-    { id: 'pic4', name: '森林', type: 'image', value: '/picture/forest.jpg' },
-    { id: 'pic5', name: '沙滩', type: 'image', value: '/picture/beach.jpg' },
-    { id: 'pic6', name: '海洋', type: 'image', value: '/picture/ocean.jpg' },
-    { id: 'pic7', name: '独树', type: 'image', value: '/picture/tree.jpg' }
-];
-
-const presetVideos = [
-    { id: 'video1', name: '上杉绘梨衣', type: 'video', value: '/video/eriyi.mp4', thumbnail: '/video/eriyi.mp4' },
-    { id: 'video_elaina1', name: '伊蕾娜1', type: 'video', value: '/video/elaina1.mp4', thumbnail: '/video/elaina1.mp4' },
-    { id: 'video_elaina2', name: '伊蕾娜2', type: 'video', value: '/video/elaina2.mp4', thumbnail: '/video/elaina2.mp4' },
-    { id: 'video_elaina3', name: '伊蕾娜3', type: 'video', value: '/video/elaina3.mp4', thumbnail: '/video/elaina3.mp4' },
-    { id: 'video_keqing', name: '刻晴', type: 'video', value: '/video/keqing.mp4', thumbnail: '/video/keqing.mp4' },
-    { id: 'video_xi', name: '囍', type: 'video', value: '/video/xi.mp4', thumbnail: '/video/xi.mp4' },
-    { id: 'video3', name: '心海', type: 'video', value: '/video/kokomi.mp4', thumbnail: '/video/kokomi.mp4' },
-    { id: 'video_jiangnan', name: '江南烧酒', type: 'video', value: '/video/jiangnan.mp4', thumbnail: '/video/jiangnan.mp4' },
-    { id: 'video4', name: '藿藿', type: 'video', value: '/video/huohuo.mp4', thumbnail: '/video/huohuo.mp4' },
-    { id: 'video5', name: '胡桃', type: 'video', value: '/video/hutao.mp4', thumbnail: '/video/hutao.mp4' },
-    { id: 'video_witch', name: '魔女', type: 'video', value: '/video/witch.mp4', thumbnail: '/video/witch.mp4' },
-    { id: 'video_luming', name: '鹿鸣', type: 'video', value: '/video/luming.mp4', thumbnail: '/video/luming.mp4' }
-];
-
-const presetColors = [
-    { type: 'solid', color: '#FF5733' },
-    { type: 'solid', color: '#33FF57' },
-    { type: 'solid', color: '#3357FF' },
-    { type: 'gradient', color: 'linear-gradient(135deg, #FF5733, #FFC300)' },
-    { type: 'gradient', color: 'linear-gradient(135deg, #33FF57, #33FFF5)' },
-    { type: 'gradient', color: 'linear-gradient(135deg, #3357FF, #8E44AD)' },
-];
-
 export function initBackground() {
     bindBackgroundEvents();
-    applyBackground();
 }
 
 export function applyBackground() {
     const root = document.documentElement;
     const updates = {};
-    let needsVideoCleanup = true;
+    let isVideo = false;
 
     if (currentBgType === 'video' && currentBg) {
         createVideoBackground(currentBg);
         updates['--bg'] = 'transparent';
         updates['--bg-image'] = 'none';
-        needsVideoCleanup = false;
+        isVideo = true;
     } else if (currentBgType === 'image' && currentBg) {
         updates['--bg-image'] = `url("${currentBg}")`;
         updates['--bg'] = 'transparent';
@@ -70,22 +38,19 @@ export function applyBackground() {
         root.style.removeProperty('--bg-pos');
     }
 
-    if (Object.keys(updates).length > 0) {
-        requestAnimationFrame(() => {
-            for (const [key, value] of Object.entries(updates)) {
-                root.style.setProperty(key, value);
-            }
-        });
-    }
+    requestAnimationFrame(() => {
+        for (const [key, value] of Object.entries(updates)) {
+            root.style.setProperty(key, value);
+        }
+    });
 
-    if (needsVideoCleanup) {
+    if (!isVideo) {
         removeVideoBackground();
     }
 }
 
 function createVideoBackground(videoUrl) {
-    const createStart = performance.now();
-    let videoContainer = document.getElementById('videoBgContainer');
+    let container = document.getElementById('videoBgContainer');
     let video = document.getElementById('videoBgPlayer');
 
     if (video && video.src === videoUrl && !video.paused) {
@@ -93,11 +58,11 @@ function createVideoBackground(videoUrl) {
         return;
     }
 
-    if (!videoContainer) {
-        videoContainer = document.createElement('div');
-        videoContainer.id = 'videoBgContainer';
-        videoContainer.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;overflow:hidden;pointer-events:none;';
-        document.body.insertBefore(videoContainer, document.body.firstChild);
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'videoBgContainer';
+        container.className = 'video-bg-container';
+        document.body.insertBefore(container, document.body.firstChild);
     }
 
     if (!video) {
@@ -107,106 +72,45 @@ function createVideoBackground(videoUrl) {
         video.muted = true;
         video.loop = true;
         video.playsInline = true;
-        video.preload = 'auto';
-        video.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 0.3s;';
-
+        video.className = 'video-bg-player'; // Use CSS class
+        
         video.addEventListener('loadeddata', () => {
             video.style.opacity = '1';
-            const loadTime = (performance.now() - createStart).toFixed(1);
-            console.log(`✅ 视频渲染完成，总耗时: ${loadTime}ms`);
         }, { once: true });
 
-        videoContainer.appendChild(video);
+        container.appendChild(video);
     }
 
     if (video.src !== videoUrl) {
         video.style.opacity = '0';
         video.src = videoUrl;
         video.play().catch(() => {
+            // Handle autoplay policy
             document.addEventListener('click', () => video.play(), { once: true });
         });
     }
 }
 
 function removeVideoBackground() {
-    const videoContainer = document.getElementById('videoBgContainer');
-    if (videoContainer) {
-        const video = videoContainer.querySelector('video');
+    const container = document.getElementById('videoBgContainer');
+    if (container) {
+        const video = container.querySelector('video');
         if (video) {
             video.pause();
             video.src = '';
         }
-        videoContainer.remove();
+        container.remove();
     }
 }
 
 export async function loadSavedBackground() {
-    const cachedVideo = document.getElementById('videoBgPlayer');
-    if (cachedVideo && !cachedVideo.paused) {
-        return;
-    }
+    const bgType = localStorage.getItem(STORAGE_KEYS.BG_TYPE) || 'color';
+    let localBg = localStorage.getItem(STORAGE_KEYS.BG);
 
-    const bgType = localStorage.getItem('startpage.bgType') || 'color';
-    let localBg = localStorage.getItem('startpage.bg');
-
-    // Migration for legacy Chinese filenames
-    const legacyBackgroundMap = {
-        'picture/%E5%B1%B1%E5%B3%A6.jpg': '/picture/mountain.jpg',
-        'picture/%E6%A1%A5.jpg': '/picture/bridge.jpg',
-        'picture/%E6%A3%AE%E6%9E%97.jpg': '/picture/forest.jpg',
-        'picture/%E6%B2%99%E6%BB%A9.jpg': '/picture/beach.jpg',
-        'picture/%E7%8B%AC%E6%A0%91.jpg': '/picture/tree.jpg',
-        'picture/山峦.jpg': '/picture/mountain.jpg',
-        'picture/桥.jpg': '/picture/bridge.jpg',
-        'picture/森林.jpg': '/picture/forest.jpg',
-        'picture/沙滩.jpg': '/picture/beach.jpg',
-        'picture/独树.jpg': '/picture/tree.jpg',
-        // English relative paths to absolute paths
-        'picture/mountain.jpg': '/picture/mountain.jpg',
-        'picture/starry_night.jpg': '/picture/starry_night.jpg',
-        'picture/bridge.jpg': '/picture/bridge.jpg',
-        'picture/forest.jpg': '/picture/forest.jpg',
-        'picture/beach.jpg': '/picture/beach.jpg',
-        'picture/ocean.jpg': '/picture/ocean.jpg',
-        'picture/tree.jpg': '/picture/tree.jpg',
-        // Videos
-        'video/上杉绘梨衣.mp4': '/video/eriyi.mp4',
-        'video/伊蕾娜1.mp4': '/video/elaina1.mp4',
-        'video/伊蕾娜2.mp4': '/video/elaina2.mp4',
-        'video/伊蕾娜3.mp4': '/video/elaina3.mp4',
-        'video/刻晴.mp4': '/video/keqing.mp4',
-        'video/囍.mp4': '/video/xi.mp4',
-        'video/心海.mp4': '/video/kokomi.mp4',
-        'video/江南烧酒.mp4': '/video/jiangnan.mp4',
-        'video/藿藿.mp4': '/video/huohuo.mp4',
-        'video/胡桃.mp4': '/video/hutao.mp4',
-        'video/魔女.mp4': '/video/witch.mp4',
-        'video/鹿鸣.mp4': '/video/luming.mp4',
-        // English relative video paths
-        'video/eriyi.mp4': '/video/eriyi.mp4',
-        'video/elaina1.mp4': '/video/elaina1.mp4',
-        'video/elaina2.mp4': '/video/elaina2.mp4',
-        'video/elaina3.mp4': '/video/elaina3.mp4',
-        'video/keqing.mp4': '/video/keqing.mp4',
-        'video/xi.mp4': '/video/xi.mp4',
-        'video/kokomi.mp4': '/video/kokomi.mp4',
-        'video/jiangnan.mp4': '/video/jiangnan.mp4',
-        'video/huohuo.mp4': '/video/huohuo.mp4',
-        'video/hutao.mp4': '/video/hutao.mp4',
-        'video/witch.mp4': '/video/witch.mp4',
-        'video/luming.mp4': '/video/luming.mp4'
-    };
-
-    if (localBg && legacyBackgroundMap[localBg]) {
-        localBg = legacyBackgroundMap[localBg];
-        localStorage.setItem('startpage.bg', localBg);
-        console.log('Migrated legacy background path to:', localBg);
-    }
-
-    if (bgType !== 'video') {
-        if (localBg) {
-            currentBg = localBg;
-            currentBgType = bgType;
+    if (!localBg) {
+        if (currentBg) {
+            currentBg = '';
+            currentBgType = 'color';
             applyBackground();
         }
         return;
@@ -214,29 +118,26 @@ export async function loadSavedBackground() {
 
     if (localBg === 'INDEXED_DB_VIDEO') {
         try {
-            if (!getDB()) await initIndexedDB();
+            await initIndexedDB();
             const dbData = await loadBackgroundFromDB();
 
             if (dbData?.data) {
-                let videoUrl;
-                if (dbData.data instanceof Blob) {
-                    videoUrl = URL.createObjectURL(dbData.data);
-                } else if (typeof dbData.data === 'string' && dbData.data.startsWith('data:')) {
-                    videoUrl = dbData.data;
-                } else {
-                    throw new Error('未知的视频数据格式');
-                }
-
+                const videoUrl = dbData.data instanceof Blob 
+                    ? URL.createObjectURL(dbData.data) 
+                    : dbData.data;
+                
                 currentBg = videoUrl;
                 currentBgType = bgType;
                 applyBackground();
                 return;
             }
         } catch (error) {
-            console.warn('❌ IndexedDB加载失败:', error);
+            console.warn('Failed to load background from DB:', error);
         }
-        localStorage.removeItem('startpage.bg');
-        localStorage.removeItem('startpage.bgType');
+        localStorage.removeItem(STORAGE_KEYS.BG);
+        currentBg = '';
+        currentBgType = 'color';
+        applyBackground();
         return;
     }
 
@@ -244,22 +145,6 @@ export async function loadSavedBackground() {
         currentBg = localBg;
         currentBgType = bgType;
         applyBackground();
-
-        if (localBg.startsWith('data:') && localBg.length > 1024 * 1024) {
-            setTimeout(async () => {
-                try {
-                    const response = await fetch(localBg);
-                    const blob = await response.blob();
-
-                    if (!getDB()) await initIndexedDB();
-                    await saveBackgroundToDB(blob, currentBgType);
-                    localStorage.setItem('startpage.bg', 'INDEXED_DB_VIDEO');
-                } catch (e) {
-                    console.warn('迁移失败:', e);
-                }
-            }, 3000);
-        }
-        return;
     }
 }
 
@@ -277,475 +162,248 @@ export function closeBackgroundDialog() {
 
 function initializeBackgroundDialog() {
     switchTab('presets');
-    generatePresetBackgrounds();
-    resetCustomUpload();
+    renderPresets();
+    
+    const fileInput = document.getElementById('bgFileInput');
+    const urlInput = document.getElementById('bgUrlInput');
+    if (fileInput) fileInput.value = '';
+    if (urlInput) urlInput.value = '';
     
     document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const tabName = btn.getAttribute('data-tab');
-            switchTab(tabName);
-        });
+        btn.onclick = () => switchTab(btn.dataset.tab);
     });
 }
 
 function switchTab(tabName) {
     document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active');
+        btn.classList.toggle('active', btn.dataset.tab === tabName);
     });
     document.querySelectorAll('.tab-panel').forEach(panel => {
-        panel.classList.remove('active');
+        panel.classList.toggle('active', panel.dataset.panel === tabName);
     });
-    
-    const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
-    const activePanel = document.querySelector(`[data-panel="${tabName}"]`);
-    
-    if (activeBtn) activeBtn.classList.add('active');
-    if (activePanel) activePanel.classList.add('active');
 }
 
-function generatePresetBackgrounds() {
+function renderPresets() {
     const grid = document.getElementById('presetsGrid');
-    if (!grid) return;
+    if (!grid || grid.children.length > 0) return;
     
-    // 优化：如果已经生成过，就不再重新生成
-    if (grid.children.length > 0) return;
-    
-    grid.innerHTML = '';
-    
-    presetBackgrounds.forEach(bg => {
+    const createItem = (bg, isVideo = false) => {
         const item = document.createElement('div');
-        item.className = 'preset-item';
-        item.onclick = (e) => selectPresetBackground(bg, e);
+        item.className = `preset-item ${isVideo ? 'video-preset' : ''}`;
+        item.onclick = () => selectPreset(bg);
         
         const preview = document.createElement('div');
-        preview.className = 'preset-preview';
+        preview.className = `preset-preview ${isVideo ? 'video-preview' : ''}`;
+        
         if (bg.type === 'image') {
             preview.style.backgroundImage = `url("${bg.value}")`;
             preview.style.backgroundSize = 'cover';
             preview.style.backgroundPosition = 'center';
         } else if (bg.type === 'gradient') {
-            preview.style.background = bg.value;
-        } else {
-            preview.style.backgroundColor = bg.value;
+            preview.style.background = bg.color;
+        } else if (bg.type === 'solid') {
+            preview.style.backgroundColor = bg.color;
+        } else if (isVideo) {
+            const video = document.createElement('video');
+            video.src = bg.value;
+            video.muted = true;
+            video.loop = true;
+            video.preload = 'metadata';
+            video.style.objectFit = 'contain';
+            video.style.width = '100%';
+            video.style.height = '100%';
+            video.style.backgroundColor = '#000';
+            
+            item.onmouseenter = () => video.play().catch(() => {});
+            item.onmouseleave = () => { video.pause(); video.currentTime = 0; };
+            
+            preview.appendChild(video);
+            const playIcon = document.createElement('div');
+            playIcon.className = 'play-icon';
+            playIcon.textContent = '▶';
+            preview.appendChild(playIcon);
         }
         
         const name = document.createElement('div');
         name.className = 'preset-name';
-        name.textContent = bg.name;
+        name.textContent = bg.name || (bg.type === 'solid' ? '纯色' : '渐变');
         
         item.appendChild(preview);
         item.appendChild(name);
-        grid.appendChild(item);
-    });
-    
-    presetVideos.forEach(bg => {
-        const item = document.createElement('div');
-        item.className = 'preset-item video-preset';
-        item.onclick = (e) => selectPresetBackground(bg, e);
-        
-        const preview = document.createElement('div');
-        preview.className = 'preset-preview video-preview';
-        
-        // 使用视频标签作为预览
-        const videoPreview = document.createElement('video');
-        videoPreview.src = bg.value;
-        videoPreview.muted = true;
-        videoPreview.loop = true;
-        videoPreview.playsInline = true;
-        videoPreview.preload = 'none'; // 优化：不预加载视频
-        videoPreview.style.width = '100%';
-        videoPreview.style.height = '100%';
-        videoPreview.style.objectFit = 'cover';
-        
-        // 鼠标悬停播放预览
-        item.addEventListener('mouseenter', () => {
-            videoPreview.play().catch(() => {});
-        });
-        item.addEventListener('mouseleave', () => {
-            videoPreview.pause();
-            videoPreview.currentTime = 0;
-        });
+        return item;
+    };
 
-        preview.appendChild(videoPreview);
-        
-        const playIcon = document.createElement('div');
-        playIcon.className = 'play-icon';
-        playIcon.innerHTML = `
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="white" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
-                <path d="M8 5v14l11-7z"/>
-            </svg>
-        `;
-        preview.appendChild(playIcon);
-        
-        const name = document.createElement('div');
-        name.className = 'preset-name';
-        name.textContent = `🎬 ${bg.name}`;
-        
-        item.appendChild(preview);
-        item.appendChild(name);
-        grid.appendChild(item);
+    BACKGROUND_CONFIG.presets.forEach(bg => grid.appendChild(createItem(bg)));
+    BACKGROUND_CONFIG.videos.forEach(bg => grid.appendChild(createItem(bg, true)));
+    (BACKGROUND_CONFIG.colors || []).forEach(bg => {
+        const colorBg = { ...bg, value: bg.color, name: '' }; 
+        grid.appendChild(createItem(colorBg));
     });
 }
 
-function selectPresetBackground(bg, event) {
-    const currentBgValue = localStorage.getItem('startpage.bg');
-    if (currentBgValue === 'INDEXED_DB_VIDEO' && bg.type === 'video') {
-        const confirmed = confirm('当前有自定义上传的视频背景，切换到预设视频会丢失。确定要切换吗？');
-        if (!confirmed) return;
-    }
-    
-    document.querySelectorAll('.preset-item').forEach(item => {
-        item.classList.remove('selected');
-    });
-    
-    if (event && event.currentTarget) {
-        event.currentTarget.classList.add('selected');
-    }
-    
-    currentBg = bg.value;
+function selectPreset(bg) {
+    currentBg = bg.value || bg.color;
     currentBgType = bg.type;
     applyBackground();
-    
-    localStorage.setItem('startpage.bg', currentBg);
-    localStorage.setItem('startpage.bgType', currentBgType);
-    
-    showToast(`已应用${bg.name}背景`);
-    closeBackgroundDialog();
 }
 
-function resetCustomUpload() {
-    const fileInput = document.getElementById('bgFileInput');
-    const urlInput = document.getElementById('bgUrlInput');
-    if (fileInput) fileInput.value = '';
-    if (urlInput) urlInput.value = '';
-}
-
-export function resetBackground() {
-    currentBg = '';
-    currentBgType = 'color';
-    applyBackground();
-    localStorage.removeItem('startpage.bg');
-    localStorage.removeItem('startpage.bgType');
-    showToast('背景已重置');
-    closeBackgroundDialog();
-}
-
-function handleFileUpload(file) {
-    if (!file) {
-        showToast('请选择文件');
-        return;
-    }
+async function handleFileUpload(file) {
+    if (!file) return;
     
-    const isImage = file.type.startsWith('image/');
     const isVideo = file.type.startsWith('video/');
     
-    if (!isImage && !isVideo) {
-        showToast('请选择图片或视频文件');
-        return;
-    }
-    
     if (isVideo) {
-        handleVideoUpload(file);
+        if (file.size > 50 * 1024 * 1024) {
+            showToast('视频文件过大 (最大 50MB)');
+            return;
+        }
+        await saveVideoBackground(file);
     } else {
-        handleImageUpload(file);
+        await saveImageBackground(file);
     }
 }
 
-function handleVideoUpload(file) {
-    const fileSizeMB = file.size / 1024 / 1024;
-    if (fileSizeMB > 10) {
-        showToast('视频较大，正在优化处理...');
-        optimizeVideo(file).then(optimizedBlob => {
-            if (optimizedBlob) {
-                processVideoFile(optimizedBlob);
-            } else {
-                showToast('正在加载原始视频...');
-                processVideoFile(file);
-            }
-        }).catch(error => {
-            showToast('正在加载原始视频...');
-            processVideoFile(file);
-        });
-    } else {
-        showToast('正在加载视频...');
-        processVideoFile(file);
-    }
-}
-
-function optimizeVideo(file) {
-    return new Promise((resolve, reject) => {
-        const video = document.createElement('video');
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        video.preload = 'metadata';
-        video.muted = true;
-        
-        video.onloadedmetadata = function() {
-            let targetWidth = video.videoWidth;
-            let targetHeight = video.videoHeight;
-            const maxWidth = 1920;
-            const maxHeight = 1080;
-            
-            if (video.videoWidth > maxWidth || video.videoHeight > maxHeight) {
-                const widthRatio = maxWidth / video.videoWidth;
-                const heightRatio = maxHeight / video.videoHeight;
-                const ratio = Math.min(widthRatio, heightRatio);
-                
-                targetWidth = Math.round(video.videoWidth * ratio);
-                targetHeight = Math.round(video.videoHeight * ratio);
-                
-                targetWidth = targetWidth - (targetWidth % 2);
-                targetHeight = targetHeight - (targetHeight % 2);
-            }
-            
-            canvas.width = targetWidth;
-            canvas.height = targetHeight;
-            video.currentTime = 0;
-        };
-        
-        video.onseeked = function() {
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            resolve(null); 
-        };
-        
-        video.onerror = function(e) {
-            reject(new Error('视频加载失败'));
-        };
-        
-        const videoUrl = URL.createObjectURL(file);
-        video.src = videoUrl;
-    });
-}
-
-async function processVideoFile(file) {
+async function saveVideoBackground(file) {
     try {
+        showToast('正在处理视频...');
         const blobUrl = URL.createObjectURL(file);
+        
         currentBg = blobUrl;
         currentBgType = 'video';
         applyBackground();
         
-        showToast('正在保存视频背景...');
+        await saveBackgroundToDB(file, 'video');
+        localStorage.setItem(STORAGE_KEYS.BG_TYPE, 'video');
+        localStorage.setItem(STORAGE_KEYS.BG, 'INDEXED_DB_VIDEO');
         
-        if (!getDB()) await initIndexedDB();
-        await saveBackgroundToDB(file, currentBgType);
-        
-        localStorage.setItem('startpage.bgType', currentBgType);
-        localStorage.setItem('startpage.bg', 'INDEXED_DB_VIDEO');
-        
-        showToast('✅ 视频背景已应用并永久保存');
-        
+        showToast('视频背景已保存');
+        closeBackgroundDialog();
     } catch (error) {
-        showToast('视频背景应用失败: ' + error.message);
+        showToast('保存失败: ' + error.message);
     }
 }
 
-function handleImageUpload(file) {
-    const fileSizeMB = file.size / 1024 / 1024;
-    if (fileSizeMB > 10) {
-        showToast('图片较大，正在智能压缩，请稍候...');
-    } else {
-        showToast('正在优化图片质量...');
-    }
-    
-    smartCompress(file).then(compressedBlob => {
-        if (compressedBlob) {
-            processImageFile(compressedBlob);
-        } else {
-            showToast('图片处理失败');
-        }
-    }).catch(error => {
-        showToast('图片处理失败，请尝试其他图片');
-    });
-}
-
-function processImageFile(file) {
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-        const imageData = e.target.result;
+async function saveImageBackground(file) {
+    try {
+        showToast('正在处理图片...');
         
-        try {
-            currentBg = imageData;
+        // Compress if larger than 2MB
+        let blobToSave = file;
+        if (file.size > 2 * 1024 * 1024) {
+            blobToSave = await compressImage(file, { maxWidth: 1920, quality: 0.85 });
+        }
+        
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const dataUrl = e.target.result;
+            currentBg = dataUrl;
             currentBgType = 'image';
             applyBackground();
             
             try {
-                localStorage.setItem('startpage.bg', currentBg);
-                localStorage.setItem('startpage.bgType', currentBgType);
-                
-                saveBackgroundToDB(currentBg, currentBgType).catch(err => {
-                    console.warn('备份到IndexedDB失败:', err);
-                });
-                closeBackgroundDialog();
-                showToast('自定义背景已应用并保存 ✓');
-                
-            } catch (error) {
-                if (error.name === 'QuotaExceededError') {
-                    try {
-                        await saveBackgroundToDB(currentBg, currentBgType);
-                        localStorage.setItem('startpage.bg', 'INDEXED_DB_VIDEO'); // 使用统一的标记
-                        closeBackgroundDialog();
-                        showToast('背景已应用并保存到IndexedDB ✓');
-                    } catch (dbError) {
-                        if (file instanceof Blob) {
-                            const originalFile = new File([file], 'compressed.jpg', { type: 'image/jpeg' });
-                            compressImage(originalFile, {
-                                maxWidth: 1280,
-                                maxHeight: 720,
-                                targetSize: 800 * 1024,
-                                quality: 0.75
-                            }).then(smallerBlob => {
-                                if (smallerBlob) {
-                                    processImageFile(smallerBlob);
-                                } else {
-                                    showToast('图片过大，仅临时应用');
-                                    closeBackgroundDialog();
-                                }
-                            }).catch(() => {
-                                showToast('图片压缩失败，仅临时应用');
-                                closeBackgroundDialog();
-                            });
-                        } else {
-                            showToast('图片已应用（无法永久保存）');
-                            closeBackgroundDialog();
-                        }
-                    }
-                } else {
-                    throw error;
-                }
+                localStorage.setItem(STORAGE_KEYS.BG, dataUrl);
+                localStorage.setItem(STORAGE_KEYS.BG_TYPE, 'image');
+            } catch (e) {
+                await saveBackgroundToDB(blobToSave, 'image');
+                localStorage.setItem(STORAGE_KEYS.BG, 'INDEXED_DB_VIDEO');
+                localStorage.setItem(STORAGE_KEYS.BG_TYPE, 'image');
             }
             
-        } catch (error) {
-            showToast('保存背景失败: ' + error.message);
-        }
-    };
-    
-    reader.onerror = function(e) {
-        showToast('文件读取失败');
-    };
-    
-    reader.readAsDataURL(file);
+            showToast('图片背景已保存');
+            closeBackgroundDialog();
+        };
+        reader.readAsDataURL(blobToSave);
+        
+    } catch (error) {
+        showToast('处理失败: ' + error.message);
+    }
 }
 
 function handleUrlBackground() {
-    const urlInput = document.getElementById('bgUrlInput');
-    const url = urlInput.value.trim();
+    const url = document.getElementById('bgUrlInput').value.trim();
+    if (!url) return;
     
-    if (!url) {
-        showToast('请输入图片或视频URL');
-        return;
-    }
+    const isVideo = /\.(mp4|webm|ogg|mov)$/i.test(url);
     
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        showToast('请输入有效的HTTP或HTTPS链接');
-        return;
-    }
+    currentBg = url;
+    currentBgType = isVideo ? 'video' : 'image';
+    applyBackground();
     
-    try {
-        const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov'];
-        const isVideo = videoExtensions.some(ext => url.toLowerCase().includes(ext));
-        
-        currentBg = url;
-        currentBgType = isVideo ? 'video' : 'image';
-        applyBackground();
-        
-        localStorage.setItem('startpage.bg', currentBg);
-        localStorage.setItem('startpage.bgType', currentBgType);
-        
-        saveBackgroundToDB(currentBg, currentBgType).catch(err => {
-            console.warn('保存到IndexedDB失败:', err);
-        });
-        
-        closeBackgroundDialog();
-        showToast(isVideo ? '视频背景已应用并保存 ✓' : '背景已应用并保存 ✓');
-    } catch (error) {
-        showToast('应用背景失败: ' + error.message);
-    }
-}
-
-function setupDragAndDrop() {
-    const uploadArea = document.getElementById('uploadArea');
-    if (!uploadArea) return;
+    localStorage.setItem(STORAGE_KEYS.BG, currentBg);
+    localStorage.setItem(STORAGE_KEYS.BG_TYPE, currentBgType);
     
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        uploadArea.addEventListener(eventName, preventDefaults, false);
-    });
-    
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-    
-    ['dragenter', 'dragover'].forEach(eventName => {
-        uploadArea.addEventListener(eventName, highlight, false);
-    });
-    
-    ['dragleave', 'drop'].forEach(eventName => {
-        uploadArea.addEventListener(eventName, unhighlight, false);
-    });
-    
-    function highlight() {
-        uploadArea.classList.add('dragover');
-    }
-    
-    function unhighlight() {
-        uploadArea.classList.remove('dragover');
-    }
-    
-    uploadArea.addEventListener('drop', handleDrop, false);
-    uploadArea.addEventListener('click', () => {
-        document.getElementById('bgFileInput').click();
-    });
-    
-    function handleDrop(e) {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        
-        if (files.length > 0) {
-            handleFileUpload(files[0]);
-        }
-    }
+    closeBackgroundDialog();
+    showToast('网络背景已应用');
 }
 
 export function bindBackgroundEvents() {
     const bgBtn = $('#bgBtn');
-    if (bgBtn) {
-        bgBtn.addEventListener('click', openBackgroundDialog);
+    if (bgBtn) bgBtn.onclick = openBackgroundDialog;
+
+    const dialog = document.getElementById('bgDialog');
+    if (dialog) {
+        dialog.addEventListener('close', () => {
+            loadSavedBackground();
+        });
     }
     
     const fileInput = document.getElementById('bgFileInput');
     if (fileInput) {
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                handleFileUpload(file);
-            }
-        });
+        fileInput.onchange = (e) => handleFileUpload(e.target.files[0]);
     }
     
     const resetBtn = document.getElementById('resetBgBtn');
     if (resetBtn) {
-        resetBtn.addEventListener('click', resetBackground);
+        resetBtn.onclick = () => {
+            currentBg = '';
+            currentBgType = 'color';
+            applyBackground();
+            localStorage.removeItem(STORAGE_KEYS.BG);
+            localStorage.removeItem(STORAGE_KEYS.BG_TYPE);
+            showToast('背景已重置');
+            closeBackgroundDialog();
+        };
     }
     
     const cancelBtn = document.getElementById('cancelBgBtn');
-    if (cancelBtn) {
-        cancelBtn.addEventListener('click', closeBackgroundDialog);
+    if (cancelBtn) cancelBtn.onclick = () => {
+        closeBackgroundDialog();
+    };
+
+    const saveBgBtn = document.getElementById('saveBgBtn');
+    if (saveBgBtn) {
+        saveBgBtn.onclick = () => {
+            if (currentBg) {
+                localStorage.setItem(STORAGE_KEYS.BG, currentBg);
+                localStorage.setItem(STORAGE_KEYS.BG_TYPE, currentBgType);
+                showToast('背景已保存');
+            }
+            closeBackgroundDialog();
+        };
     }
     
     const applyUrlBtn = document.getElementById('applyUrlBtn');
-    if (applyUrlBtn) {
-        applyUrlBtn.addEventListener('click', handleUrlBackground);
-    }
+    if (applyUrlBtn) applyUrlBtn.onclick = handleUrlBackground;
     
-    const urlInput = document.getElementById('bgUrlInput');
-    if (urlInput) {
-        urlInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                handleUrlBackground();
+    const uploadArea = document.getElementById('uploadArea');
+    if (uploadArea) {
+        uploadArea.onclick = () => fileInput && fileInput.click();
+        
+        uploadArea.ondragover = (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        };
+        
+        uploadArea.ondragleave = () => {
+            uploadArea.classList.remove('dragover');
+        };
+        
+        uploadArea.ondrop = (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                handleFileUpload(e.dataTransfer.files[0]);
             }
-        });
+        };
     }
-    
-    setupDragAndDrop();
 }

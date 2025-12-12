@@ -276,23 +276,7 @@ export async function loadNeteaseMusic(id) {
         return;
     }
     
-    if (id === 'test') {
-        const testPlaylist = [
-            { id: 1, name: '测试歌曲 1', artist: '测试艺术家', album: '测试专辑', duration: 180000, url: 'https://music.163.com/song/media/outer/url?id=1' },
-            { id: 2, name: '测试歌曲 2', artist: '测试艺术家', album: '测试专辑', duration: 200000, url: 'https://music.163.com/song/media/outer/url?id=2' },
-            { id: 3, name: '测试歌曲 3', artist: '测试艺术家', album: '测试专辑', duration: 220000, url: 'https://music.163.com/song/media/outer/url?id=3' }
-        ];
-        musicState.playlist = testPlaylist;
-        musicState.currentIndex = 0;
-        musicState.isPlaying = false;
-        renderMusicPlayer(container);
-        showToast('✅ 已加载测试歌单（3首歌曲）');
-        const fp = document.getElementById('floatingPlayer');
-        if (fp) fp.classList.remove('hidden');
-        return;
-    }
-    
-    container.innerHTML = '<div class="music-placeholder"><p>⏳ 正在加载歌单...</p><small>这可能需要几秒钟</small></div>';
+    container.innerHTML = '<div class="music-placeholder"><p> 正在加载歌单...</p><small>这可能需要几秒钟</small></div>';
     
     try {
         const playlist = await fetchNeteaseMusicList(id);
@@ -300,13 +284,11 @@ export async function loadNeteaseMusic(id) {
         if (playlist.length === 0) {
             container.innerHTML = `
                 <div class="music-placeholder">
-                    <p>❌ 加载歌单失败</p>
+                    <p>加载失败</p>
                     <small>
                         可能原因：<br>
                         1. 歌单ID不正确<br>
-                        2. 歌单受版权保护<br>
-                        3. 网络连接问题<br><br>
-                        💡 提示：输入 "test" 可以加载测试数据
+                        2. 网络连接问题<br><br>
                     </small>
                 </div>
             `;
@@ -597,7 +579,7 @@ function playMusic() {
     musicState.audio.addEventListener('ended', () => nextMusic(false));
     
     musicState.audio.addEventListener('error', (e) => {
-        showToast('歌曲加载失败，尝试下一首');
+        showToast('加载失败');
         setTimeout(() => {
             if (musicState.isPlaying) nextMusic();
         }, 1000);
@@ -608,12 +590,6 @@ function playMusic() {
         playPromise.catch(error => {
             musicState.isPlaying = false;
             updatePlayButtonIcon();
-            
-            if (error.name === 'NotAllowedError') {
-                showToast('需要用户交互才能播放');
-            } else {
-                showToast('无法播放此歌曲');
-            }
         });
     }
 }

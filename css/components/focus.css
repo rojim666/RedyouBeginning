@@ -1,4 +1,3 @@
-/* 专注按钮特殊动画 */
 #focusBtn:hover svg{
   animation: tomatoWiggle 0.5s ease-in-out;
 }
@@ -9,7 +8,6 @@
   75% { transform: rotate(5deg) scale(1.05); }
 }
 
-/* ==================== 专注空间样式 ==================== */
 .focus-mode{
   position: fixed;
   top: 0;
@@ -32,14 +30,12 @@
   opacity: 1;
 }
 
-/* 深色主题的专注空间背景 */
 [data-theme="dark"] .focus-mode{
   background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(40px) saturate(150%);
   -webkit-backdrop-filter: blur(40px) saturate(150%);
 }
 
-/* 透明度控制条 */
 .focus-opacity-control{
   position: absolute;
   top: 24px;
@@ -231,7 +227,6 @@
   transition: stroke-dashoffset 1s linear;
 }
 
-/* 时钟刻度装饰 */
 .clock-ticks{
   color: rgba(0, 0, 0, 0.3);
   animation: clockTickPulse 3s ease-in-out infinite;
@@ -779,33 +774,4 @@
 
 [data-theme="dark"] .stat-label{
   color: rgba(255, 255, 255, 0.7);
-}
-
-/* 移动端适配 */
-@media (max-width: 768px){
-  .focus-container{
-    grid-template-columns: 1fr;
-    padding: 24px;
-    gap: 24px;
-  }
-  
-  .focus-timer-wrapper{
-    width: 240px;
-    height: 240px;
-  }
-  
-  .focus-time-display{
-    font-size: 48px;
-  }
-  
-  .focus-stats{
-    flex-direction: column;
-    gap: 12px;
-    width: 100%;
-  }
-  
-  .stat-item{
-    width: 100%;
-    justify-content: center;
-  }
 }

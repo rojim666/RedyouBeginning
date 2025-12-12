@@ -102,15 +102,27 @@
 .desktop-bookmark-favicon{
   width: 36px;
   height: 36px;
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+.desktop-bookmark-favicon.initial {
+  background: linear-gradient(135deg, rgba(0, 122, 255, 0.1) 0%, rgba(0, 122, 255, 0.05) 100%);
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 16px;
+  border: 1px solid rgba(0, 122, 255, 0.15);
 }
 
 .desktop-bookmark-favicon img{
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
 }
 
 /* 书签编辑按钮（在卡片上悬停时显示） */
@@ -372,50 +384,68 @@
   display:flex;
   align-items:center;
   gap:12px;
-  padding:10px 12px;
-  border-radius:6px;
+  padding:8px 10px;
+  border-radius:10px;
   cursor:pointer;
-  transition:background-color 0.15s ease;
+  transition:all 0.2s cubic-bezier(0.28, 0.11, 0.32, 1);
   text-decoration:none;
   color:var(--control-text);
+  border: 1px solid transparent;
+  position: relative;
 }
 
 .bookmark-item:hover{
   background:var(--btn-bg);
+  border-color: var(--control-border);
+}
+
+.bookmark-link-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
 }
 
 .bookmark-icon{
-  width:20px;
-  height:20px;
-  border-radius:4px;
-  background:#f0f0f0;
+  width:32px;
+  height:32px;
+  border-radius:8px;
+  background:rgba(128, 128, 128, 0.1);
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:12px;
+  font-size:14px;
+  font-weight: 600;
   flex-shrink:0;
+  color: var(--accent);
+  overflow: hidden;
 }
 
 .bookmark-icon img{
   width:100%;
   height:100%;
   object-fit:cover;
-  border-radius:4px;
 }
 
 .bookmark-content{
   flex:1;
   min-width:0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .bookmark-title{
   font-size:14px;
   font-weight:500;
   color:var(--control-text);
-  margin:0 0 2px 0;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
+  line-height: 1.2;
 }
 
 .bookmark-url{
@@ -424,6 +454,48 @@
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
+  line-height: 1.2;
+}
+
+/* Action buttons styling */
+.bookmark-item .icon-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  opacity: 0;
+  transform: translateX(10px);
+  transition: all 0.2s ease;
+}
+
+.bookmark-item:hover .icon-btn {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.bookmark-item .icon-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text);
+}
+
+.bookmark-item .icon-btn.delete-btn:hover {
+  background: rgba(255, 59, 48, 0.1);
+  color: var(--danger);
+}
+
+[data-theme="dark"] .bookmark-item .icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .bookmark-item .icon-btn.delete-btn:hover {
+  background: rgba(255, 69, 58, 0.2);
 }
 
 .bookmark-folder{

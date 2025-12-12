@@ -1,5 +1,6 @@
 @import 'variables.css';
 @import 'base.css';
+@import 'video-bg.css';
 @import 'components/layout.css';
 @import 'components/header.css';
 @import 'components/clock.css';

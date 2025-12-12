@@ -1,84 +1,31 @@
-
 import { $, showToast, escapeHtml } from './utils.js';
 
 const defaultEngines = [
-  { name: 'Google', url: 'https://www.google.com/search?q=' },
   { name: 'Bing', url: 'https://www.bing.com/search?q=' },
+  { name: 'Google', url: 'https://www.google.com/search?q=' },
   { name: '百度', url: 'https://www.baidu.com/s?wd=' },
-  { name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=' }
 ];
 
 let searchEngines = [];
-let searchHistory = JSON.parse(localStorage.getItem('startpage.searchHistory') || '[]');
+let searchHistory = [];
 let preventHideSuggestions = false;
-
-export function loadSearchEngines() {
-  try {
-    const saved = localStorage.getItem('startpage.searchEngines');
-    if (saved) {
-      searchEngines = JSON.parse(saved);
-    } else {
-      searchEngines = JSON.parse(JSON.stringify(defaultEngines));
-      saveSearchEngines();
-    }
-    syncEngineSelect();
-  } catch (e) {
-    console.error('加载搜索引擎失败:', e);
-    searchEngines = JSON.parse(JSON.stringify(defaultEngines));
-  }
-}
-
-function saveSearchEngines() {
-  try {
-    localStorage.setItem('startpage.searchEngines', JSON.stringify(searchEngines));
-  } catch (e) {
-    console.error('保存搜索引擎失败:', e);
-  }
-}
-
-export function syncEngineSelect() {
-  const select = document.getElementById('engineSelect');
-  if (!select) return;
-  
-  const currentValue = select.value;
-  select.innerHTML = '';
-  
-  searchEngines.forEach(engine => {
-    const option = document.createElement('option');
-    option.value = engine.url;
-    option.textContent = engine.name;
-    select.appendChild(option);
-  });
-  
-  if (select.querySelector(`option[value="${currentValue}"]`)) {
-    select.value = currentValue;
-  } else if (searchEngines.length > 0) {
-    select.value = searchEngines[0].url;
-  }
-}
 
 export function initSearch() {
   loadSearchEngines();
+  loadSearchHistory();
   
   const searchForm = $('#searchForm');
   const searchInput = $('#searchInput');
   const engineSelect = $('#engineSelect');
-  const searchSuggestions = $('#searchSuggestions');
   
-  if (searchForm) {
-    searchForm.addEventListener('submit', onSearch);
-  }
+  if (searchForm) searchForm.addEventListener('submit', onSearch);
   
   if (searchInput) {
     searchInput.addEventListener('input', showSearchSuggestions);
     searchInput.addEventListener('focus', showSearchSuggestions);
-    
-    // Blur handling with delay to allow clicking on suggestions
     searchInput.addEventListener('blur', () => {
       setTimeout(() => {
-        if (!preventHideSuggestions) {
-          hideSearchSuggestions();
-        }
+        if (!preventHideSuggestions) hideSearchSuggestions();
       }, 200);
     });
   }
@@ -89,7 +36,6 @@ export function initSearch() {
       searchInput.focus();
     });
     
-    // Restore last used engine
     const lastEngine = localStorage.getItem('startpage.engine');
     if (lastEngine && searchEngines.some(e => e.url === lastEngine)) {
       engineSelect.value = lastEngine;
@@ -97,56 +43,81 @@ export function initSearch() {
   }
 }
 
+export function loadSearchEngines() {
+  try {
+    const saved = localStorage.getItem('startpage.searchEngines');
+    searchEngines = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(defaultEngines));
+    if (!saved) saveSearchEngines();
+    syncEngineSelect();
+  } catch (e) {
+    console.error('Failed to load search engines:', e);
+    searchEngines = [...defaultEngines];
+  }
+}
+
+function loadSearchHistory() {
+  try {
+    searchHistory = JSON.parse(localStorage.getItem('startpage.searchHistory') || '[]');
+  } catch {
+    searchHistory = [];
+  }
+}
+
+function saveSearchEngines() {
+  localStorage.setItem('startpage.searchEngines', JSON.stringify(searchEngines));
+}
+
+export function syncEngineSelect() {
+  const select = $('#engineSelect');
+  if (!select) return;
+  
+  const current = select.value;
+  select.innerHTML = searchEngines.map(e => 
+    `<option value="${e.url}">${escapeHtml(e.name)}</option>`
+  ).join('');
+  
+  if (select.querySelector(`option[value="${current}"]`)) {
+    select.value = current;
+  } else if (searchEngines.length) {
+    select.value = searchEngines[0].url;
+  }
+}
+
 function onSearch(e) {
   e.preventDefault();
-  const searchInput = $('#searchInput');
-  const engineSelect = $('#engineSelect');
+  const input = $('#searchInput');
+  const select = $('#engineSelect');
   
-  const q = searchInput.value.trim();
-  const engine = engineSelect.value;
+  const q = input.value.trim();
+  const engine = select.value;
   
   if (!q) return;
   
   saveSearchHistory(q, engine);
   
-  if (isProbablyUrl(q)) {
-    const url = q.startsWith('http') ? q : 'https://' + q;
-    window.location.href = url;
+  if (isUrl(q)) {
+    window.location.href = q.startsWith('http') ? q : `https://${q}`;
   } else {
     window.open(engine + encodeURIComponent(q), '_blank');
   }
   
-  searchInput.value = '';
+  input.value = '';
   hideSearchSuggestions();
 }
 
-function isProbablyUrl(s) {
-  return /^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}/.test(s) || s.startsWith('http');
+function isUrl(s) {
+  return /^https?:\/\//.test(s) || /^([a-z0-9-]+\.)+[a-z]{2,}/i.test(s);
 }
 
 function saveSearchHistory(query, engine) {
-  if (query === undefined && engine === undefined) {
-    localStorage.setItem('startpage.searchHistory', JSON.stringify(searchHistory));
-    return;
-  }
+  if (!query) return;
   
-  if (isProbablyUrl(query) || !query.trim()) return;
+  const record = { query, engine, timestamp: Date.now() };
   
-  const record = {
-    query: query.trim(),
-    engine: engine,
-    timestamp: Date.now()
-  };
-  
-  searchHistory = searchHistory.filter(item => 
-    !(item.query === record.query && item.engine === record.engine)
-  );
-  
-  searchHistory.unshift(record);
-  
-  if (searchHistory.length > 6) {
-    searchHistory = searchHistory.slice(0, 6);
-  }
+  searchHistory = [
+    record,
+    ...searchHistory.filter(item => item.query !== query || item.engine !== engine)
+  ].slice(0, 6);
   
   localStorage.setItem('startpage.searchHistory', JSON.stringify(searchHistory));
 }
@@ -159,265 +130,166 @@ function clearSearchHistory() {
 }
 
 function showSearchSuggestions() {
-  const input = $('#searchInput');
-  const query = input.value.trim().toLowerCase();
-  
-  if (query.length === 0) {
-    renderSearchSuggestions(searchHistory.slice(0, 6));
-  } else {
-    const filtered = searchHistory
-      .filter(item => item.query.toLowerCase().includes(query))
-      .slice(0, 6);
-    renderSearchSuggestions(filtered);
-  }
+  const query = $('#searchInput').value.trim().toLowerCase();
+  const items = query 
+    ? searchHistory.filter(i => i.query.toLowerCase().includes(query)).slice(0, 6)
+    : searchHistory.slice(0, 6);
+    
+  renderSearchSuggestions(items);
 }
 
 function renderSearchSuggestions(items) {
-  const suggestions = $('#searchSuggestions');
-  if (!suggestions) return;
+  const container = $('#searchSuggestions');
+  if (!container) return;
   
-  suggestions.innerHTML = '';
-  
-  if (items.length === 0 && searchHistory.length === 0) {
-    suggestions.classList.add('hidden');
+  if (!items.length) {
+    container.classList.add('hidden');
     return;
   }
   
-  const fragment = document.createDocumentFragment();
-  
-  items.forEach((item) => {
-    const div = document.createElement('div');
-    div.className = 'search-suggestion-item';
-    
-    let engineOptions = '';
-    searchEngines.forEach(engine => {
-      const selected = engine.url === item.engine ? 'selected' : '';
-      engineOptions += `<option value="${engine.url}" ${selected}>${engine.name}</option>`;
-    });
-    
-    div.innerHTML = `
-      <span class="search-suggestion-text" style="cursor:pointer;flex:1;">${escapeHtml(item.query)}</span>
-      <select class="search-suggestion-engine-select" style="padding:4px 8px;border:1px solid var(--control-border);border-radius:4px;background:var(--control-bg);color:var(--text);font-size:12px;cursor:pointer;">
-        ${engineOptions}
+  container.innerHTML = items.map(item => `
+    <div class="search-suggestion-item">
+      <span class="search-suggestion-text">${escapeHtml(item.query)}</span>
+      <select class="search-suggestion-engine-select">
+        ${searchEngines.map(e => 
+          `<option value="${e.url}" ${e.url === item.engine ? 'selected' : ''}>${escapeHtml(e.name)}</option>`
+        ).join('')}
       </select>
       <span class="search-suggestion-time">${formatTime(item.timestamp)}</span>
-    `;
+    </div>
+  `).join('') + (searchHistory.length ? '<button class="clear-history-btn">清空搜索记录</button>' : '');
+  
+  // Event delegation
+  container.querySelectorAll('.search-suggestion-item').forEach((el, idx) => {
+    const item = items[idx];
     
-    const textSpan = div.querySelector('.search-suggestion-text');
-    textSpan.addEventListener('click', () => {
-      const engineSelect = div.querySelector('.search-suggestion-engine-select');
+    el.querySelector('.search-suggestion-text').addEventListener('click', () => {
       $('#searchInput').value = item.query;
-      $('#engineSelect').value = engineSelect.value;
+      $('#engineSelect').value = el.querySelector('select').value;
       hideSearchSuggestions();
-      // Trigger search manually
-      const form = $('#searchForm');
-      if (form) form.dispatchEvent(new Event('submit'));
+      $('#searchForm')?.dispatchEvent(new Event('submit'));
     });
     
-    const engineSel = div.querySelector('.search-suggestion-engine-select');
-    engineSel.addEventListener('pointerdown', (e) => {
+    const select = el.querySelector('select');
+    select.addEventListener('pointerdown', e => {
       e.stopPropagation();
       preventHideSuggestions = true;
     });
-    engineSel.addEventListener('change', (e) => {
+    select.addEventListener('change', e => {
       e.stopPropagation();
       item.engine = e.target.value;
-      saveSearchHistory();
-      setTimeout(() => { preventHideSuggestions = false; }, 300);
+      saveSearchHistory(item.query, item.engine); // Update history
+      setTimeout(() => preventHideSuggestions = false, 300);
     });
-    
-    fragment.appendChild(div);
   });
   
-  if (searchHistory.length > 0) {
-    const clearBtn = document.createElement('button');
-    clearBtn.className = 'clear-history-btn';
-    clearBtn.type = 'button'; // Prevent submitting the form on Enter
-    clearBtn.textContent = '清空搜索记录';
-    clearBtn.addEventListener('click', (e) => {
-        e.preventDefault(); 
-        clearSearchHistory();
-    });
-    fragment.appendChild(clearBtn);
-  }
+  container.querySelector('.clear-history-btn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    clearSearchHistory();
+  });
   
-  suggestions.appendChild(fragment);
-  suggestions.classList.remove('hidden');
+  container.classList.remove('hidden');
 }
 
 function hideSearchSuggestions() {
-  const suggestions = $('#searchSuggestions');
-  if (suggestions) suggestions.classList.add('hidden');
+  $('#searchSuggestions')?.classList.add('hidden');
 }
 
-function formatTime(timestamp) {
-  const now = Date.now();
-  const diff = now - timestamp;
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  
-  if (minutes < 1) return '刚刚';
-  if (minutes < 60) return `${minutes}分钟前`;
-  if (hours < 24) return `${hours}小时前`;
-  if (days < 7) return `${days}天前`;
-  return new Date(timestamp).toLocaleDateString();
+function formatTime(ts) {
+  const diff = (Date.now() - ts) / 1000;
+  if (diff < 60) return '刚刚';
+  if (diff < 3600) return `${Math.floor(diff / 60)}分钟前`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}小时前`;
+  return new Date(ts).toLocaleDateString();
 }
 
-// Editor functions
+// Editor
 export function renderEnginesEditor() {
-  const container = document.getElementById('enginesEditor');
+  const container = $('#enginesEditor');
   if (!container) return;
   
-  container.innerHTML = '';
-  
-  if (searchEngines.length === 0) {
-    container.innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px;">还没有搜索引擎</div>`;
+  if (!searchEngines.length) {
+    container.innerHTML = `<div class="empty-state">还没有搜索引擎</div>`;
     return;
   }
   
-  const header = document.createElement('div');
-  header.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 80px;gap:12px;align-items:center;padding:8px;margin-bottom:12px;border-bottom:1px solid var(--control-border);font-weight:600;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;';
-  header.innerHTML = `
-    <div>名称</div>
-    <div>搜索URL</div>
-    <div></div>
+  container.innerHTML = `
+    <div class="editor-header">
+      <div>名称</div><div>搜索URL</div><div></div>
+    </div>
+    ${searchEngines.map((e, i) => `
+      <div class="engine-row">
+        <div class="name">${escapeHtml(e.name)}</div>
+        <div class="url">${escapeHtml(e.url)}</div>
+        <div class="actions">
+          <button class="icon-btn edit-btn" data-idx="${i}">✎</button>
+          <button class="icon-btn delete-btn" data-idx="${i}">×</button>
+        </div>
+      </div>
+    `).join('')}
+    <button class="btn primary add-engine-btn">+ 添加搜索引擎</button>
   `;
-  container.appendChild(header);
   
-  searchEngines.forEach((engine, idx) => {
-    const row = document.createElement('div');
-    row.className = 'engine-row';
-    row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 80px;gap:12px;align-items:center;padding:12px;border-radius:8px;border:1px solid var(--control-border);margin-bottom:8px;transition:all 0.2s;background:var(--control-bg);';
-    
-    row.addEventListener('mouseenter', () => {
-      row.style.background = 'var(--control-bg-hover)';
-      row.style.borderColor = 'rgba(0, 122, 255, 0.3)';
-    });
-    
-    row.addEventListener('mouseleave', () => {
-      row.style.background = 'var(--control-bg)';
-      row.style.borderColor = 'var(--control-border)';
-    });
-    
-    const nameDiv = document.createElement('div');
-    nameDiv.style.cssText = 'font-size:14px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
-    nameDiv.textContent = engine.name;
-    
-    const urlDiv = document.createElement('div');
-    urlDiv.style.cssText = 'font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
-    urlDiv.textContent = engine.url;
-    
-    const btnDiv = document.createElement('div');
-    btnDiv.style.cssText = 'display:flex;gap:6px;justify-content:flex-end;';
-    
-    const editBtn = document.createElement('button');
-    editBtn.className = 'icon-btn';
-    editBtn.type = 'button';
-    editBtn.title = '编辑';
-    editBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-    editBtn.style.cssText = 'padding:6px;';
-    editBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      openEngineEditor(engine, idx);
-    });
-    
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'icon-btn';
-    deleteBtn.type = 'button';
-    deleteBtn.title = '删除';
-    deleteBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 6H5v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 11v6m6-6v6M10 6V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-    deleteBtn.style.cssText = 'padding:6px;';
-    deleteBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (confirm(`确定要删除 "${engine.name}" 吗？`)) {
-        searchEngines.splice(idx, 1);
+  container.querySelectorAll('.edit-btn').forEach(btn => 
+    btn.addEventListener('click', () => openEngineEditor(searchEngines[btn.dataset.idx], btn.dataset.idx))
+  );
+  
+  container.querySelectorAll('.delete-btn').forEach(btn => 
+    btn.addEventListener('click', () => {
+      if (confirm('确定删除?')) {
+        searchEngines.splice(btn.dataset.idx, 1);
         saveSearchEngines();
         syncEngineSelect();
         renderEnginesEditor();
       }
-    });
-    
-    btnDiv.appendChild(editBtn);
-    btnDiv.appendChild(deleteBtn);
-    
-    row.appendChild(nameDiv);
-    row.appendChild(urlDiv);
-    row.appendChild(btnDiv);
-    container.appendChild(row);
-  });
+    })
+  );
   
-  const addBtn = document.createElement('button');
-  addBtn.className = 'btn primary';
-  addBtn.textContent = '+ 添加搜索引擎';
-  addBtn.style.cssText = 'margin-top:12px;width:100%;';
-  addBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    openEngineEditor(null, -1);
-  });
-  container.appendChild(addBtn);
+  container.querySelector('.add-engine-btn').addEventListener('click', () => openEngineEditor(null));
 }
 
 function openEngineEditor(engine, idx) {
-  const name = engine ? engine.name : '';
-  const url = engine ? engine.url : '';
-  const isEdit = engine !== null;
-  
-  const dialog = document.createElement('div');
-  dialog.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--panel-bg);border:1px solid var(--control-border);border-radius:12px;padding:24px;z-index:3000;box-shadow:0 8px 32px rgba(0,0,0,0.2);min-width:400px;';
+  const isEdit = !!engine;
+  const dialog = document.createElement('dialog');
+  dialog.className = 'engine-editor-dialog';
   
   dialog.innerHTML = `
-    <div style="font-size:18px;font-weight:600;margin-bottom:16px;color:var(--text);">${isEdit ? '编辑搜索引擎' : '添加搜索引擎'}</div>
-    <div style="margin-bottom:16px;">
-      <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;">名称</label>
-      <input type="text" id="engineName" placeholder="例如：Google" value="${escapeHtml(name)}" style="width:100%;padding:10px 12px;border:1px solid var(--control-border);border-radius:6px;background:var(--input-bg);color:var(--text);font-size:14px;box-sizing:border-box;">
-    </div>
-    <div style="margin-bottom:20px;">
-      <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;">搜索URL (用 {0} 或 {q} 表示搜索词)</label>
-      <input type="text" id="engineUrl" placeholder="例如：https://www.google.com/search?q=" value="${escapeHtml(url)}" style="width:100%;padding:10px 12px;border:1px solid var(--control-border);border-radius:6px;background:var(--input-bg);color:var(--text);font-size:14px;box-sizing:border-box;">
-    </div>
-    <div style="display:flex;gap:12px;justify-content:flex-end;">
-      <button id="cancelEngineBtn" class="btn" style="flex:1;">取消</button>
-      <button id="saveEngineBtn" class="btn primary" style="flex:1;">${isEdit ? '保存' : '添加'}</button>
+    <div class="editor-content">
+      <h3>${isEdit ? '编辑' : '添加'}搜索引擎</h3>
+      <div class="form-group">
+        <label>名称</label>
+        <input id="engineName" value="${escapeHtml(engine?.name || '')}" placeholder="例如：Google">
+      </div>
+      <div class="form-group">
+        <label>URL ({q} 代表搜索词)</label>
+        <input id="engineUrl" value="${escapeHtml(engine?.url || '')}" placeholder="https://google.com/search?q=">
+      </div>
+      <div class="form-actions">
+        <button class="btn" id="cancelBtn">取消</button>
+        <button class="btn primary" id="saveBtn">保存</button>
+      </div>
     </div>
   `;
   
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.3);z-index:2999;';
-  
-  document.body.appendChild(overlay);
   document.body.appendChild(dialog);
-  
-  const nameInput = document.getElementById('engineName');
-  const urlInput = document.getElementById('engineUrl');
-  
-  nameInput.focus();
+  dialog.showModal();
   
   const close = () => {
-    overlay.remove();
+    dialog.close();
     dialog.remove();
   };
   
-  document.getElementById('cancelEngineBtn').addEventListener('click', close);
-  
-  document.getElementById('saveEngineBtn').addEventListener('click', () => {
-    const newName = nameInput.value.trim();
-    const newUrl = urlInput.value.trim();
+  dialog.querySelector('#cancelBtn').addEventListener('click', close);
+  dialog.querySelector('#saveBtn').addEventListener('click', () => {
+    const name = dialog.querySelector('#engineName').value.trim();
+    const url = dialog.querySelector('#engineUrl').value.trim();
     
-    if (!newName) {
-      alert('请输入搜索引擎名称');
-      return;
-    }
-    if (!newUrl) {
-      alert('请输入搜索URL');
-      return;
-    }
+    if (!name || !url) return showToast('请填写完整信息');
     
     if (isEdit) {
-      searchEngines[idx].name = newName;
-      searchEngines[idx].url = newUrl;
+      searchEngines[idx] = { name, url };
     } else {
-      searchEngines.push({ name: newName, url: newUrl });
+      searchEngines.push({ name, url });
     }
     
     saveSearchEngines();
@@ -425,6 +297,4 @@ function openEngineEditor(engine, idx) {
     renderEnginesEditor();
     close();
   });
-  
-  overlay.addEventListener('click', close);
 }

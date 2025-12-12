@@ -1,4 +1,3 @@
-/* 苹果风格顶部栏 */
 .topbar{
   display:flex;
   justify-content:space-between;
@@ -22,7 +21,6 @@
   gap: 8px;
 }
 
-/* 隐藏大部分顶部按钮，只保留主题切换和设置 */
 .topbar .left > *:not(#themeToggle):not(#settingsBtn) {
   display: none;
 }
@@ -31,7 +29,6 @@
   display: none;
 }
 
-/* 图标按钮 */
 .icon-btn{
   background: var(--control-bg) !important;
   backdrop-filter: var(--blur-sm) !important;
@@ -63,7 +60,6 @@
   box-shadow: var(--shadow-sm);
 }
 
-/* day/night toggle (inspired visual style) */
 .toggle{
   width:72px;
   height:40px;
@@ -100,12 +96,10 @@
   box-shadow: 0 6px 16px rgba(0,0,0,0.4);
 }
 
-/* 移除旧的 indicator 样式 */
 .toggle__indicator{
   display:none;
 }
 
-/* SVG toggle animations */
 .toggle-svg{
   width:100%;
   height:100%;
@@ -117,7 +111,6 @@
   fill:transparent;
 }
 
-/* 太阳样式 */
 .toggle-svg .sun-group{
   transition:opacity .5s var(--toggle-ease);
   opacity:1;
@@ -146,221 +139,70 @@
   filter: blur(0.5px);
 }
 
-/* 太阳脉动动画 */
-@keyframes sun-pulse{
-  0%, 100%{
-    transform: scale(1);
-    filter: drop-shadow(0 0 4px rgba(255,228,77,0.5));
-  }
-  50%{
-    transform: scale(1.08);
-    filter: drop-shadow(0 0 8px rgba(255,228,77,0.7));
-  }
+/* 简化后的昼夜切换动画 */
+.toggle-svg .sun-group,
+.toggle-svg .moon-group,
+.toggle-svg .stars,
+.toggle-svg .clouds {
+  transition: all 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
+  transform-origin: center;
 }
 
-/* 太阳光线旋转动画 */
-@keyframes sun-rays-rotate{
-  0%{
-    transform: rotate(0deg);
-  }
-  100%{
-    transform: rotate(360deg);
-  }
+/* 默认状态 (白天) */
+.toggle-svg .sun-group {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
 }
 
-/* 太阳光线闪烁动画 */
-@keyframes sun-rays-shimmer{
-  0%, 100%{
-    opacity: 0.85;
-    stroke-width: 2;
-    filter: blur(0.5px);
-  }
-  50%{
-    opacity: 0.6;
-    stroke-width: 2.5;
-    filter: blur(0.8px);
-  }
+.toggle-svg .moon-group {
+  opacity: 0;
+  transform: translateX(10px) scale(0.5);
 }
 
-/* 月亮样式 */
-.toggle-svg .moon{
-  fill:#E8ECF4;
-  opacity:0;
-  transform-origin:84px 24px;
-  transition:opacity .5s var(--toggle-ease), transform .5s var(--toggle-ease);
-  filter: drop-shadow(0 0 3px rgba(232,236,244,0.6));
+.toggle-svg .stars {
+  opacity: 0;
+  transform: scale(0.5);
 }
 
-/* 星星样式 */
-.toggle-svg .star{
-  fill:#FFF;
-  opacity:0;
-  transform-origin:center;
-  transition:opacity .5s ease;
-  filter: drop-shadow(0 0 1px rgba(255,255,255,0.8));
+.toggle-svg .clouds {
+  opacity: 0.9;
+  fill: aliceblue;
+  transform: translateX(0);
 }
 
-/* 云朵样式 */
-.toggle-svg .cloud{
-  fill:#ffffffdd;
-  opacity:0.85;
-  transition:transform 6s linear, opacity .4s;
+/* 夜间状态 */
+.toggle[aria-pressed="true"] .sun-group {
+  opacity: 0;
+  transform: scale(0.5) rotate(45deg);
 }
 
-/* 熊样式 */
-.toggle-svg .bear-head{
-  fill:#5a4028;
-  opacity:0;
-  transform-origin:6px 0px;
-  transition:opacity .45s;
+.toggle[aria-pressed="true"] .moon-group {
+  opacity: 1;
+  fill: ivory;
+  transform: translateX(0) scale(1);
 }
 
-.toggle-svg .bear-body{
-  fill:#7a5a3d;
-  opacity:0;
-  transition:opacity .45s;
+.toggle[aria-pressed="true"] .stars {
+  opacity: 1;
+  fill: ivory;
+  transform: scale(1);
 }
 
-/* 日间模式状态 */
-.toggle[aria-pressed="false"] .sun-group{
-  opacity:1;
+.toggle[aria-pressed="true"] .clouds {
+  opacity: 0.3;
+  transform: translateX(-4px);
 }
 
-.toggle[aria-pressed="false"] .sun{
-  opacity:1;
-  transform:scale(1);
-  animation: sun-pulse 4s ease-in-out infinite;
+/* 简单的悬浮动画 */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
 }
 
-.toggle[aria-pressed="false"] .sun-rays{
-  opacity:1;
-  animation: sun-rays-rotate 20s linear infinite;
+.toggle[aria-pressed="true"] .moon {
+  animation: float 4s ease-in-out infinite;
 }
 
-.toggle[aria-pressed="false"] .sun-rays line{
-  animation: sun-rays-shimmer 3s ease-in-out infinite;
-}
-
-/* 为每条光线添加不同的延迟，使动画更自然 */
-.toggle[aria-pressed="false"] .sun-rays line:nth-child(1){
-  animation-delay: 0s;
-}
-
-.toggle[aria-pressed="false"] .sun-rays line:nth-child(2){
-  animation-delay: 0.375s;
-}
-
-.toggle[aria-pressed="false"] .sun-rays line:nth-child(3){
-  animation-delay: 0.75s;
-}
-
-.toggle[aria-pressed="false"] .sun-rays line:nth-child(4){
-  animation-delay: 1.125s;
-}
-
-.toggle[aria-pressed="false"] .sun-rays line:nth-child(5){
-  animation-delay: 1.5s;
-}
-
-.toggle[aria-pressed="false"] .sun-rays line:nth-child(6){
-  animation-delay: 1.875s;
-}
-
-.toggle[aria-pressed="false"] .sun-rays line:nth-child(7){
-  animation-delay: 2.25s;
-}
-
-.toggle[aria-pressed="false"] .sun-rays line:nth-child(8){
-  animation-delay: 2.625s;
-}
-
-.toggle[aria-pressed="false"] .moon{
-  opacity:0;
-  transform:scale(0.6);
-}
-
-.toggle[aria-pressed="false"] .star{
-  opacity:0;
-}
-
-.toggle[aria-pressed="false"] .cloud{
-  opacity:0.85;
-}
-
-.toggle[aria-pressed="false"] .bear-head,
-.toggle[aria-pressed="false"] .bear-body{
-  opacity:0;
-}
-
-/* 夜间模式状态 */
-.toggle[aria-pressed="true"] .sun-group{
-  opacity:0;
-}
-
-.toggle[aria-pressed="true"] .sun{
-  opacity:0;
-  transform:scale(0.5);
-}
-
-.toggle[aria-pressed="true"] .sun-rays{
-  opacity:0;
-}
-
-.toggle[aria-pressed="true"] .moon{
-  opacity:1;
-  transform:scale(1);
-}
-
-.toggle[aria-pressed="true"] .star{
-  opacity:1;
-}
-
-.toggle[aria-pressed="true"] .cloud{
-  opacity:0.3;
-}
-
-.toggle[aria-pressed="true"] .bear-head,
-.toggle[aria-pressed="true"] .bear-body{
-  opacity:1;
-}
-
-/* 云朵漂移动画 */
-@keyframes cloud-drift{
-  0%{transform:translateX(0)}
-  50%{transform:translateX(-8px)}
-  100%{transform:translateX(0)}
-}
-
-.toggle .clouds .c1{
-  animation:cloud-drift 10s ease-in-out infinite;
-}
-
-.toggle .clouds .c2{
-  animation:cloud-drift 12s ease-in-out infinite;
-  animation-delay: 2s;
-}
-
-/* 星星闪烁动画 */
-@keyframes twinkle{
-  0%,100%{opacity:1;transform:scale(1)}
-  50%{opacity:0.3;transform:scale(0.7)}
-}
-
-.toggle[aria-pressed="true"] .s1{
-  animation:twinkle 2.5s ease-in-out infinite;
-}
-
-.toggle[aria-pressed="true"] .s2{
-  animation:twinkle 3.2s ease-in-out infinite;
-  animation-delay: 0.5s;
-}
-
-.toggle[aria-pressed="true"] .s3{
-  animation:twinkle 2.8s ease-in-out infinite;
-  animation-delay: 1s;
-}
-
-/* 聚焦样式（无障碍） */
 .toggle:focus{
   outline:2px solid rgba(37,99,235,0.3);
   outline-offset:3px;
@@ -368,11 +210,4 @@
 
 .toggle:focus:not(:focus-visible){
   outline:none;
-}
-
-@media (max-width:640px){
-  .toggle{
-    width:60px;
-    height:36px;
-  }
 }

@@ -1,4 +1,4 @@
-import { $, showToast, formatTime } from './utils.js';
+import { $, showToast, escapeHtml } from './utils.js';
 
 let focusTimer = null;
 let timeLeft = 25 * 60;
@@ -16,95 +16,77 @@ let focusStats = {
 export function initFocusMode() {
   loadFocusData();
   
-  const focusBtn = $('#focusBtn');
-  const focusModeEl = $('#focusMode');
-  const exitBtn = $('#exitFocusBtn');
-  
-  const startBtn = $('#focusStartBtn');
-  const pauseBtn = $('#focusPauseBtn');
-  const resetBtn = $('#focusResetBtn');
-  
-  const durationBtns = document.querySelectorAll('.duration-btn');
-  const opacitySlider = $('#focusOpacitySlider');
-  const opacityValue = $('#focusOpacityValue');
-  
-  const addTaskBtn = $('#addFocusTaskBtn');
-  const newTaskInput = $('#newFocusTaskInput');
-  
-  // Open/Close
-  if (focusBtn && focusModeEl) {
-    focusBtn.addEventListener('click', () => {
-      focusModeEl.classList.remove('hidden');
-      checkDateReset();
-      updateStatsUI();
-    });
-  }
-  
-  if (exitBtn) {
-    exitBtn.addEventListener('click', () => {
-      if (isRunning) {
-        if (confirm('专注计时正在进行中，确定要退出吗？')) {
-          resetTimer();
-          focusModeEl.classList.add('hidden');
-        }
-      } else {
-        focusModeEl.classList.add('hidden');
-      }
-    });
-  }
-  
-  // Timer Controls
-  if (startBtn) startBtn.addEventListener('click', startTimer);
-  if (pauseBtn) pauseBtn.addEventListener('click', pauseTimer);
-  if (resetBtn) resetBtn.addEventListener('click', resetTimer);
-  
-  // Duration Selection
-  durationBtns.forEach(btn => {
+  const els = {
+    btn: $('#focusBtn'),
+    panel: $('#focusMode'),
+    exit: $('#exitFocusBtn'),
+    start: $('#focusStartBtn'),
+    pause: $('#focusPauseBtn'),
+    reset: $('#focusResetBtn'),
+    slider: $('#focusOpacitySlider'),
+    addBtn: $('#addFocusTaskBtn'),
+    input: $('#newFocusTaskInput'),
+    list: $('#focusTasksList')
+  };
+
+  // Visibility Controls
+  els.btn?.addEventListener('click', () => {
+    els.panel.classList.remove('hidden');
+    checkDateReset();
+    updateStatsUI();
+  });
+
+  els.exit?.addEventListener('click', () => {
+    if (isRunning && !confirm('确定要退出吗？')) return;
+    if (isRunning) resetTimer();
+    els.panel.classList.add('hidden');
+  });
+
+  els.start?.addEventListener('click', startTimer);
+  els.pause?.addEventListener('click', pauseTimer);
+  els.reset?.addEventListener('click', resetTimer);
+
+  document.querySelectorAll('.duration-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       if (isRunning) return;
       
-      durationBtns.forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       
       const mins = parseInt(btn.dataset.duration);
-      timeLeft = mins * 60;
-      initialTime = timeLeft;
+      timeLeft = initialTime = mins * 60;
       updateTimerDisplay();
       updateProgress(0);
     });
   });
-  
-  // Opacity Control
-  if (opacitySlider) {
-    opacitySlider.addEventListener('input', (e) => {
+
+  if (els.slider) {
+    els.slider.addEventListener('input', (e) => {
       const val = e.target.value;
-      if (opacityValue) opacityValue.textContent = `${val}%`;
-      focusModeEl.style.backgroundColor = `rgba(0, 0, 0, ${val / 100})`;
+      $('#focusOpacityValue').textContent = `${val}%`;
+      els.panel.style.backgroundColor = `rgba(0, 0, 0, ${val / 100})`;
     });
-    // Init default
-    focusModeEl.style.backgroundColor = `rgba(0, 0, 0, 0.85)`;
+    els.panel.style.backgroundColor = `rgba(0, 0, 0, 0.85)`;
   }
-  
-  // Tasks
-  if (addTaskBtn && newTaskInput) {
-    addTaskBtn.addEventListener('click', () => {
-      newTaskInput.classList.toggle('hidden');
-      if (!newTaskInput.classList.contains('hidden')) {
-        newTaskInput.focus();
+
+  // 任务管理
+  els.addBtn?.addEventListener('click', () => {
+    els.input.classList.toggle('hidden');
+    if (!els.input.classList.contains('hidden')) els.input.focus();
+  });
+
+  els.input?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      const text = els.input.value.trim();
+      if (text) {
+        addFocusTask(text);
+        els.input.value = '';
+        els.input.classList.add('hidden');
       }
-    });
-    
-    newTaskInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        const text = newTaskInput.value.trim();
-        if (text) {
-          addFocusTask(text);
-          newTaskInput.value = '';
-          newTaskInput.classList.add('hidden');
-        }
-      }
-    });
-  }
+    }
+  });
+
+  els.list?.addEventListener('click', handleTaskAction);
   
   renderFocusTasks();
   updateStatsUI();
@@ -112,15 +94,12 @@ export function initFocusMode() {
 
 function loadFocusData() {
   try {
-    const tasks = localStorage.getItem('startpage.focusTasks');
-    if (tasks) focusTasks = JSON.parse(tasks);
-    
-    const stats = localStorage.getItem('startpage.focusStats');
-    if (stats) focusStats = JSON.parse(stats);
-    
+    focusTasks = JSON.parse(localStorage.getItem('startpage.focusTasks') || '[]');
+    focusStats = JSON.parse(localStorage.getItem('startpage.focusStats') || JSON.stringify(focusStats));
     checkDateReset();
   } catch (e) {
     console.error('Load focus data error', e);
+    focusTasks = [];
   }
 }
 
@@ -152,13 +131,9 @@ function startTimer() {
   focusTimer = setInterval(() => {
     timeLeft--;
     updateTimerDisplay();
+    updateProgress(1 - (timeLeft / initialTime));
     
-    const progress = 1 - (timeLeft / initialTime);
-    updateProgress(progress);
-    
-    if (timeLeft <= 0) {
-      completeTimer();
-    }
+    if (timeLeft <= 0) completeTimer();
   }, 1000);
 }
 
@@ -179,11 +154,9 @@ function resetTimer() {
   isRunning = false;
   isPaused = false;
   
-  // Reset to selected duration
   const activeBtn = document.querySelector('.duration-btn.active');
   const mins = activeBtn ? parseInt(activeBtn.dataset.duration) : 25;
-  timeLeft = mins * 60;
-  initialTime = timeLeft;
+  timeLeft = initialTime = mins * 60;
   
   updateTimerDisplay();
   updateProgress(0);
@@ -196,20 +169,17 @@ function resetTimer() {
 function completeTimer() {
   resetTimer();
   
-  // Play sound
   try {
-    const audio = new Audio('music/bell.mp3'); // Ensure this file exists or use a data URI
-    audio.play().catch(() => {});
-  } catch (e) {}
+    new Audio('music/bell.mp3').play().catch(() => {});
+  } catch {}
   
-  // Update stats
   const mins = Math.floor(initialTime / 60);
   focusStats.todayCount++;
   focusStats.todayMinutes += mins;
   saveData();
   updateStatsUI();
   
-  showToast('专注完成！休息一下吧');
+  showToast('专注完成！休息一下吧喵~');
   
   if (Notification.permission === 'granted') {
     new Notification('专注完成', { body: `你刚刚完成了 ${mins} 分钟的专注！` });
@@ -220,32 +190,26 @@ function completeTimer() {
 
 function updateTimerDisplay() {
   const display = $('#focusTimeDisplay');
-  if (display) {
-    const m = Math.floor(timeLeft / 60);
-    const s = timeLeft % 60;
-    display.textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  }
+  if (!display) return;
+  
+  const m = Math.floor(timeLeft / 60);
+  const s = timeLeft % 60;
+  display.textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
 function updateProgress(percent) {
-  // percent 0 to 1
   const circle = document.querySelector('.focus-progress-ring .progress-ring-circle');
   if (!circle) return;
   
-  const radius = 85; // from HTML r="85"
+  const radius = 85;
   const circumference = 2 * Math.PI * radius;
   
   circle.style.strokeDasharray = `${circumference} ${circumference}`;
-  const offset = circumference - (percent * circumference);
-  circle.style.strokeDashoffset = offset;
+  circle.style.strokeDashoffset = circumference - (percent * circumference);
 }
 
 function addFocusTask(text) {
-  focusTasks.push({
-    id: Date.now(),
-    text: text,
-    completed: false
-  });
+  focusTasks.push({ id: Date.now(), text, completed: false });
   saveData();
   renderFocusTasks();
 }
@@ -254,39 +218,41 @@ function renderFocusTasks() {
   const list = $('#focusTasksList');
   if (!list) return;
   
-  list.innerHTML = '';
+  if (!focusTasks.length) {
+    list.innerHTML = '<div class="empty-state">暂无任务</div>';
+    return;
+  }
   
-  focusTasks.forEach(task => {
-    const item = document.createElement('div');
-    item.className = `focus-task-item ${task.completed ? 'completed' : ''}`;
-    item.innerHTML = `
-      <input type="checkbox" ${task.completed ? 'checked' : ''}>
-      <span>${task.text}</span>
+  list.innerHTML = focusTasks.map(task => `
+    <div class="focus-task-item ${task.completed ? 'completed' : ''}" data-id="${task.id}">
+      <input type="checkbox" ${task.completed ? 'checked' : ''} class="task-check">
+      <span>${escapeHtml(task.text)}</span>
       <button class="delete-task-btn">×</button>
-    `;
-    
-    const checkbox = item.querySelector('input');
-    checkbox.addEventListener('change', () => {
-      task.completed = checkbox.checked;
+    </div>
+  `).join('');
+}
+
+function handleTaskAction(e) {
+  const item = e.target.closest('.focus-task-item');
+  if (!item) return;
+  
+  const id = Number(item.dataset.id);
+  const task = focusTasks.find(t => t.id === id);
+  
+  if (e.target.classList.contains('task-check')) {
+    if (task) {
+      task.completed = e.target.checked;
       saveData();
-      item.classList.toggle('completed');
-    });
-    
-    const delBtn = item.querySelector('.delete-task-btn');
-    delBtn.addEventListener('click', () => {
-      focusTasks = focusTasks.filter(t => t.id !== task.id);
-      saveData();
-      renderFocusTasks();
-    });
-    
-    list.appendChild(item);
-  });
+      item.classList.toggle('completed', task.completed);
+    }
+  } else if (e.target.classList.contains('delete-task-btn')) {
+    focusTasks = focusTasks.filter(t => t.id !== id);
+    saveData();
+    renderFocusTasks();
+  }
 }
 
 function updateStatsUI() {
-  const countEl = $('#todayPomodoroCount');
-  const timeEl = $('#todayFocusTime');
-  
-  if (countEl) countEl.textContent = focusStats.todayCount;
-  if (timeEl) timeEl.textContent = `${focusStats.todayMinutes}分钟`;
+  $('#todayPomodoroCount').textContent = focusStats.todayCount;
+  $('#todayFocusTime').textContent = `${focusStats.todayMinutes}分钟`;
 }

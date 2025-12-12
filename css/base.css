@@ -1,11 +1,8 @@
-/* 通用工具类 */
 .hidden {
   display: none !important;
 }
-
 *{
   box-sizing: border-box;
-  /* 苹果系统字体 */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -13,35 +10,46 @@
 html,body{
   height:100%;
   transition:var(--theme-transition);
-  /* 防止黑色闪烁：使用深灰色作为占位符 */
-  background: #f5f7fa;
+  background: transparent;
 }
 
 [data-theme="dark"] html {
   background: #1c1c1e;
 }
 
-[data-theme="dark"] body {
-  background: var(--bg-image), var(--bg);
-  background-attachment: fixed;
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -666; 
+  
+  background-image: var(--bg-image);
+  background-color: var(--bg, #f5f7fa);
   background-size: var(--bg-size, cover);
   background-position: var(--bg-pos, center center);
+  background-repeat: no-repeat;
+  background-attachment: scroll;
+  
+  transition: background var(--theme-transition);
+  will-change: background;
+  pointer-events: none;
+}
+
+[data-theme="dark"] body::before {
+  background-color: var(--bg, #1c1c1e);
 }
 
 body{
   margin:0;
-  /* SF Pro 字体系列（苹果系统字体） */
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
   color:var(--text);
-  background: var(--bg-image), var(--bg);
-  background-attachment: fixed;
-  background-size: var(--bg-size, cover);
-  background-position: var(--bg-pos, center center);
-  transition: background var(--theme-transition), color var(--theme-transition), background-color var(--theme-transition);
-  will-change: background;
+  background: transparent;
+  transition: color var(--theme-transition);
 }
 
-/* 苹果风格按钮 */
 .btn{
   padding: 12px 20px;
   border-radius: 12px;

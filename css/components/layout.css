@@ -9,11 +9,10 @@
   display:flex;
   flex-direction:column;
   align-items:center;
-  justify-content:flex-start; /* 改为顶部对齐，方便快速搜索 */
-  padding: 120px 24px 48px; /* 增加顶部padding */
+  justify-content:flex-start; 
+  padding: 120px 24px 48px;
 }
 
-/* Footer - 苹果简约风格 */
 .footer{
   display: flex;
   align-items: center;

@@ -1,4 +1,4 @@
-/* 搜索容器 - 苹果风格 */
+/* 搜索容器 */
 .search-container{
   position:relative;
   margin-top: 24px;
@@ -12,10 +12,9 @@
 .search{
   display:flex;
   gap: 10px;
-  align-items:center; /* 改为center确保垂直对齐 */
+  align-items:center;
 }
 
-/* 搜索表单内的按钮 */
 .search button[type="submit"]{
   padding: 12px 18px;
   min-width: auto;
@@ -62,7 +61,7 @@
 }
 
 .search select{
-  padding: 10px 32px 10px 12px; /* 缩小padding，右侧留空间给箭头 */
+  padding: 10px 32px 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--control-border);
   background: var(--control-bg);
@@ -76,8 +75,8 @@
   cursor: pointer;
   box-shadow: var(--shadow-sm);
   transition: all 0.25s cubic-bezier(0.28, 0.11, 0.32, 1);
-  min-width: 100px; /* 限制最小宽度 */
-  max-width: 120px; /* 限制最大宽度 */
+  min-width: 100px;
+  max-width: 120px;
   background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6" viewBox="0 0 10 6"><path fill="%23007aff" d="M1 1l4 4 4-4"/></svg>');
   background-repeat: no-repeat;
   background-position: right 10px center;
@@ -186,7 +185,7 @@
   border-radius:8px 8px 0 0;
 }
 
-/* 搜索引擎选择框 - 苹果风格优化 */
+/* 搜索引擎选择框 */
 .search select{
   padding: 11px 36px 11px 14px;
   border-radius: 10px;
@@ -236,7 +235,6 @@ select::-ms-expand{
   display: none;
 }
 
-/* Option 选项优化 - 注意：option样式在某些浏览器中受限 */
 .search select option{
   padding: 12px 14px;
   background: var(--card);
@@ -251,8 +249,4 @@ select::-ms-expand{
 .search select option:checked{
   background: var(--accent);
   color: white;
-}
-
-@media (max-width:640px){
-  .search input{min-width:160px}
 }
